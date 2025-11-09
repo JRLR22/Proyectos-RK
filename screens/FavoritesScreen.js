@@ -3,23 +3,28 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Platform,
-    RefreshControl,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Platform,
+  RefreshControl,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
-import { useCart } from '../app/CartContext';
+import { getColors } from '../constants/colors';
+import { useCart } from '../contexts/CartContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function FavoritesScreen() {
   const router = useRouter();
   const { addToCart } = useCart();
+  const { darkMode } = useTheme();
+  const colors = getColors(darkMode);
+  
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,9 +73,9 @@ export default function FavoritesScreen() {
 
   const renderBook = useCallback(({ item }) => {
     return (
-      <View style={styles.bookCard}>
+      <View style={[styles.bookCard, { backgroundColor: colors.card }]}>
         {/* Imagen */}
-        <View style={styles.bookImageContainer}>
+        <View style={[styles.bookImageContainer, { backgroundColor: colors.surface }]}>
           {item.cover_image ? (
             <Image 
               source={{ uri: `${API_BASE_URL}/img/${item.cover_image}` }}
@@ -79,20 +84,20 @@ export default function FavoritesScreen() {
             />
           ) : (
             <View style={styles.bookImagePlaceholder}>
-              <Ionicons name="book" size={40} color="#999" />
+              <Ionicons name="book" size={40} color={colors.textTertiary} />
             </View>
           )}
         </View>
 
         {/* Info */}
         <View style={styles.bookInfo}>
-          <Text style={styles.bookTitle} numberOfLines={2}>
+          <Text style={[styles.bookTitle, { color: colors.text }]} numberOfLines={2}>
             {item.title}
           </Text>
-          <Text style={styles.bookAuthor} numberOfLines={1}>
+          <Text style={[styles.bookAuthor, { color: colors.textSecondary }]} numberOfLines={1}>
             {item.authors || "Autor desconocido"}
           </Text>
-          <Text style={styles.bookPrice}>
+          <Text style={[styles.bookPrice, { color: colors.success }]}>
             ${parseFloat(item.price).toFixed(2)}
           </Text>
         </View>
@@ -100,7 +105,7 @@ export default function FavoritesScreen() {
         {/* Acciones */}
         <View style={styles.bookActions}>
           <TouchableOpacity
-            style={styles.addButton}
+            style={[styles.addButton, { backgroundColor: colors.success }]}
             onPress={() => {
               addToCart(item);
               if (Platform.OS === 'web') {
@@ -114,38 +119,45 @@ export default function FavoritesScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.removeButton}
+            style={[styles.removeButton, { 
+              backgroundColor: darkMode ? '#4d2020' : '#FFE5E5' 
+            }]}
             onPress={() => removeFavorite(item.book_id)}
           >
-            <Ionicons name="heart" size={20} color="#F44336" />
+            <Ionicons name="heart" size={20} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>
     );
-  }, [favorites]);
+  }, [favorites, darkMode]);
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ffa3c2" />
-        <Text style={styles.loadingText}>Cargando favoritos...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          Cargando favoritos...
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.surface} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { 
+        backgroundColor: colors.surface,
+        borderBottomColor: colors.border 
+      }]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => router.replace('/')}
         >
-          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Favoritos</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Favoritos</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -155,15 +167,24 @@ export default function FavoritesScreen() {
         renderItem={renderBook}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#ffa3c2"]} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="heart-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No tienes favoritos</Text>
-            <Text style={styles.emptySubtext}>Guarda libros que te interesen</Text>
+            <Ionicons name="heart-outline" size={64} color={colors.textTertiary} />
+            <Text style={[styles.emptyText, { color: colors.text }]}>
+              No tienes favoritos
+            </Text>
+            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+              Guarda libros que te interesen
+            </Text>
             <TouchableOpacity 
-              style={styles.exploreButton}
+              style={[styles.exploreButton, { backgroundColor: colors.primary }]}
               onPress={() => router.replace('/')}
             >
               <Text style={styles.exploreButtonText}>Explorar libros</Text>
@@ -178,18 +199,15 @@ export default function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#666",
   },
   header: {
     flexDirection: "row",
@@ -197,9 +215,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   backButton: {
     padding: 8,
@@ -207,14 +223,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#1A1A1A",
   },
   listContent: {
     padding: 16,
   },
   bookCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
@@ -229,7 +243,6 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: '#F5F5F5',
   },
   bookImage: {
     width: '100%',
@@ -249,18 +262,15 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1A1A1A',
     marginBottom: 6,
   },
   bookAuthor: {
     fontSize: 13,
-    color: '#666',
     marginBottom: 8,
   },
   bookPrice: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2E7D32',
   },
   bookActions: {
     justifyContent: 'center',
@@ -268,7 +278,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   addButton: {
-    backgroundColor: '#2E7D32',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -276,7 +285,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   removeButton: {
-    backgroundColor: '#FFE5E5',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -292,17 +300,14 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#666',
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
     marginTop: 8,
     marginBottom: 24,
   },
   exploreButton: {
-    backgroundColor: '#ffa3c2',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,

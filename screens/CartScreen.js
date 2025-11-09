@@ -11,10 +11,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useCart } from "../app/CartContext";
+import { getColors } from '../constants/colors';
+import { useCart } from "../contexts/CartContext";
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function CartScreen() {
   const router = useRouter();
+  const { darkMode } = useTheme();
+  const colors = getColors(darkMode);
+  
   const {
     cartItems,
     removeFromCart,
@@ -22,7 +27,6 @@ export default function CartScreen() {
     decrementQuantity,
     clearCart,
     getCartTotal,
-    getCartCount,
   } = useCart();
 
   const API_BASE_URL = "http://localhost:8000";
@@ -92,9 +96,9 @@ export default function CartScreen() {
     const subtotal = parseFloat(item.price) * item.quantity;
 
     return (
-      <View style={styles.cartItem}>
+      <View style={[styles.cartItem, { backgroundColor: colors.card }]}>
         {/* Imagen del producto */}
-        <View style={styles.itemImageContainer}>
+        <View style={[styles.itemImageContainer, { backgroundColor: colors.surface }]}>
           {imageUrl ? (
             <Image
               source={{ uri: imageUrl }}
@@ -103,37 +107,46 @@ export default function CartScreen() {
             />
           ) : (
             <View style={styles.itemImagePlaceholder}>
-              <Ionicons name="book" size={32} color="#999" />
+              <Ionicons name="book" size={32} color={colors.textTertiary} />
             </View>
           )}
         </View>
 
         {/* Información del producto */}
         <View style={styles.itemInfo}>
-          <Text style={styles.itemTitle} numberOfLines={2}>
+          <Text style={[styles.itemTitle, { color: colors.text }]} numberOfLines={2}>
             {item.title}
           </Text>
-          <Text style={styles.itemAuthor} numberOfLines={1}>
+          <Text style={[styles.itemAuthor, { color: colors.textSecondary }]} numberOfLines={1}>
             {item.authors || "Autor desconocido"}
           </Text>
-          <Text style={styles.itemPrice}>
+          <Text style={[styles.itemPrice, { color: colors.success }]}>
             ${parseFloat(item.price).toFixed(2)}
           </Text>
 
           {/* Controles de cantidad */}
           <View style={styles.quantityControls}>
             <TouchableOpacity
-              style={styles.quantityButton}
+              style={[styles.quantityButton, { 
+                backgroundColor: colors.surface,
+                borderColor: colors.border 
+              }]}
               onPress={() => decrementQuantity(item.book_id)}
             >
-              <Ionicons name="remove" size={18} color="#1A1A1A" />
+              <Ionicons name="remove" size={18} color={colors.text} />
             </TouchableOpacity>
 
-            <Text style={styles.quantityText}>{item.quantity}</Text>
+            <Text style={[styles.quantityText, { color: colors.text }]}>
+              {item.quantity}
+            </Text>
 
             <TouchableOpacity
               style={[
                 styles.quantityButton,
+                { 
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border 
+                },
                 item.quantity >= item.stock_quantity && styles.quantityButtonDisabled
               ]}
               onPress={() => incrementQuantity(item.book_id)}
@@ -142,18 +155,18 @@ export default function CartScreen() {
               <Ionicons 
                 name="add" 
                 size={18} 
-                color={item.quantity >= item.stock_quantity ? "#999" : "#1A1A1A"} 
+                color={item.quantity >= item.stock_quantity ? colors.textTertiary : colors.text} 
               />
             </TouchableOpacity>
 
-            <Text style={styles.subtotalText}>
+            <Text style={[styles.subtotalText, { color: colors.success }]}>
               ${subtotal.toFixed(2)}
             </Text>
           </View>
 
           {/* Mensaje de stock */}
           {item.quantity >= item.stock_quantity && (
-            <Text style={styles.stockWarning}>
+            <Text style={[styles.stockWarning, { color: colors.error }]}>
               Stock máximo alcanzado
             </Text>
           )}
@@ -164,7 +177,7 @@ export default function CartScreen() {
           style={styles.deleteButton}
           onPress={() => handleRemoveItem(item.book_id, item.title)}
         >
-          <Ionicons name="trash-outline" size={20} color="#F44336" />
+          <Ionicons name="trash-outline" size={20} color={colors.error} />
         </TouchableOpacity>
       </View>
     );
@@ -172,13 +185,15 @@ export default function CartScreen() {
 
   const renderEmptyCart = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="cart-outline" size={80} color="#ccc" />
-      <Text style={styles.emptyTitle}>Tu carrito está vacío</Text>
-      <Text style={styles.emptySubtitle}>
+      <Ionicons name="cart-outline" size={80} color={colors.textTertiary} />
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>
+        Tu carrito está vacío
+      </Text>
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
         Agrega productos para comenzar tu compra
       </Text>
       <TouchableOpacity
-        style={styles.shopButton}
+        style={[styles.shopButton, { backgroundColor: colors.success }]}
         onPress={() => router.push('/')}
       >
         <Ionicons name="storefront-outline" size={20} color="#fff" />
@@ -188,19 +203,22 @@ export default function CartScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffffff" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.surface} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { 
+        backgroundColor: colors.surface,
+        borderBottomColor: colors.border 
+      }]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
           Artículos seleccionados
         </Text>
 
@@ -209,7 +227,9 @@ export default function CartScreen() {
             style={styles.clearButton}
             onPress={handleClearCart}
           >
-            <Text style={styles.clearButtonText}>Vaciar</Text>
+            <Text style={[styles.clearButtonText, { color: colors.error }]}>
+              Vaciar
+            </Text>
           </TouchableOpacity>
         )}
 
@@ -230,17 +250,22 @@ export default function CartScreen() {
           />
 
           {/* Footer con total y botón de pago */}
-          <View style={styles.footer}>
+          <View style={[styles.footer, { 
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border 
+          }]}>
             <View style={styles.totalContainer}>
               <View>
-                <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalAmount}>
+                <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
+                  Total
+                </Text>
+                <Text style={[styles.totalAmount, { color: colors.text }]}>
                   ${getCartTotal().toFixed(2)}
                 </Text>
               </View>
 
               <TouchableOpacity
-                style={styles.checkoutButton}
+                style={[styles.checkoutButton, { backgroundColor: colors.success }]}
                 onPress={handleCheckout}
               >
                 <Text style={styles.checkoutButtonText}>
@@ -259,7 +284,6 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5ff",
   },
   header: {
     flexDirection: "row",
@@ -267,9 +291,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   backButton: {
     padding: 8,
@@ -277,13 +299,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#1A1A1A",
   },
   clearButton: {
     padding: 8,
   },
   clearButtonText: {
-    color: "#F44336",
     fontSize: 16,
     fontWeight: "500",
   },
@@ -292,7 +312,6 @@ const styles = StyleSheet.create({
   },
   cartItem: {
     flexDirection: "row",
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
@@ -307,7 +326,6 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: 8,
     overflow: "hidden",
-    backgroundColor: "#F5F5F5",
   },
   itemImage: {
     width: "100%",
@@ -327,18 +345,15 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#1A1A1A",
     marginBottom: 4,
   },
   itemAuthor: {
     fontSize: 13,
-    color: "#666",
     marginBottom: 8,
   },
   itemPrice: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#2E7D32",
     marginBottom: 12,
   },
   quantityControls: {
@@ -350,11 +365,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#F5F5F5",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E0E0E0",
   },
   quantityButtonDisabled: {
     opacity: 0.5,
@@ -362,19 +375,16 @@ const styles = StyleSheet.create({
   quantityText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1A1A1A",
     minWidth: 30,
     textAlign: "center",
   },
   subtotalText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#2E7D32",
     marginLeft: "auto",
   },
   stockWarning: {
     fontSize: 11,
-    color: "#F44336",
     marginTop: 4,
   },
   deleteButton: {
@@ -389,20 +399,17 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#1A1A1A",
     marginTop: 24,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 16,
-    color: "#666",
     textAlign: "center",
     marginBottom: 32,
   },
   shopButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#2E7D32",
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 12,
@@ -414,9 +421,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   footer: {
-    backgroundColor: "#fff",
     borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
@@ -427,18 +432,15 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 4,
   },
   totalAmount: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#1A1A1A",
   },
   checkoutButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#2E7D32",
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 12,

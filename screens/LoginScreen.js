@@ -13,12 +13,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { getColors } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function LoginScreen() {
-  // ==================== ROUTER ====================
   const router = useRouter();
+  const { darkMode } = useTheme();
+  const colors = getColors(darkMode);
   
-  // ==================== ESTADOS ====================
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,19 +32,13 @@ export default function LoginScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // URL de tu API
   const API_URL = "http://localhost:8000/api";
-
-  // ==================== FUNCIONES ====================
 
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
   };
 
-  /**
-   * Manejo del login con Laravel
-   */
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Por favor completa todos los campos");
@@ -69,14 +65,11 @@ export default function LoginScreen() {
         throw new Error(data.message || 'Error en login');
       }
 
-      // Guarda el token y usuario en AsyncStorage
       await AsyncStorage.setItem('userToken', data.token);
       await AsyncStorage.setItem('userData', JSON.stringify(data.user));
 
       setLoading(false);
       Alert.alert("¡Éxito!", "Has iniciado sesión correctamente");
-      
-      // Navega al inicio
       router.replace('/');
 
     } catch (error) {
@@ -86,9 +79,6 @@ export default function LoginScreen() {
     }
   };
 
-  /**
-   * Maneja el Registro con tu API Laravel
-   */
   const handleRegister = async () => {
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
       Alert.alert("Error", "Por favor completa todos los campos obligatorios");
@@ -131,14 +121,11 @@ export default function LoginScreen() {
         throw new Error(data.message || 'Error en registro');
       }
 
-      // Guarda el token y usuario
       await AsyncStorage.setItem('userToken', data.token);
       await AsyncStorage.setItem('userData', JSON.stringify(data.user));
 
       setLoading(false);
       Alert.alert("¡Éxito!", "Cuenta creada correctamente");
-      
-      // Navega al inicio
       router.replace('/');
 
     } catch (error) {
@@ -158,28 +145,26 @@ export default function LoginScreen() {
     setConfirmPassword("");
   };
 
-  // ==================== RENDER ====================
-
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* === HEADER === */}
+        {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
+            <View style={[styles.logoIcon, { backgroundColor: colors.primary }]}>
               <Ionicons name="book" size={40} color="#fff" />
             </View>
           </View>
-          <Text style={styles.title}>
+          <Text style={[styles.title, { color: colors.primary }]}>
             {isLogin ? "Bienvenido a Gonvill" : "Crear cuenta"}
           </Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             {isLogin 
               ? "Inicia sesión para continuar" 
               : "Regístrate para empezar a comprar"
@@ -187,42 +172,57 @@ export default function LoginScreen() {
           </Text>
         </View>
 
-        {/* === FORMULARIO === */}
-        <View style={styles.form}>
+        {/* Formulario */}
+        <View style={[styles.form, { backgroundColor: colors.card }]}>
           
           {/* Campos de Registro */}
           {!isLogin && (
             <>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
+                <Ionicons 
+                  name="person-outline" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                  style={styles.inputIcon} 
+                />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder="Nombre"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.textTertiary}
                   value={firstName}
                   onChangeText={setFirstName}
                   autoCapitalize="words"
                 />
               </View>
 
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
+                <Ionicons 
+                  name="person-outline" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                  style={styles.inputIcon} 
+                />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder="Apellido"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.textTertiary}
                   value={lastName}
                   onChangeText={setLastName}
                   autoCapitalize="words"
                 />
               </View>
 
-              <View style={styles.inputContainer}>
-                <Ionicons name="call-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
+                <Ionicons 
+                  name="call-outline" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                  style={styles.inputIcon} 
+                />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder="Teléfono (opcional)"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.textTertiary}
                   value={phone}
                   onChangeText={setPhone}
                   keyboardType="phone-pad"
@@ -232,12 +232,17 @@ export default function LoginScreen() {
           )}
 
           {/* Email */}
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
+            <Ionicons 
+              name="mail-outline" 
+              size={20} 
+              color={colors.textSecondary} 
+              style={styles.inputIcon} 
+            />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               placeholder="Correo electrónico"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -246,12 +251,17 @@ export default function LoginScreen() {
           </View>
 
           {/* Contraseña */}
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+          <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
+            <Ionicons 
+              name="lock-closed-outline" 
+              size={20} 
+              color={colors.textSecondary} 
+              style={styles.inputIcon} 
+            />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               placeholder="Contraseña"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -261,19 +271,24 @@ export default function LoginScreen() {
               <Ionicons 
                 name={showPassword ? "eye-outline" : "eye-off-outline"} 
                 size={20} 
-                color="#666" 
+                color={colors.textSecondary} 
               />
             </TouchableOpacity>
           </View>
 
           {/* Confirmar Contraseña */}
           {!isLogin && (
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+            <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
+              <Ionicons 
+                name="lock-closed-outline" 
+                size={20} 
+                color={colors.textSecondary} 
+                style={styles.inputIcon} 
+              />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.text }]}
                 placeholder="Confirmar contraseña"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.textTertiary}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
@@ -283,7 +298,7 @@ export default function LoginScreen() {
                 <Ionicons 
                   name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
                   size={20} 
-                  color="#666" 
+                  color={colors.textSecondary} 
                 />
               </TouchableOpacity>
             </View>
@@ -292,13 +307,19 @@ export default function LoginScreen() {
           {/* Olvidaste contraseña */}
           {isLogin && (
             <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+              <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
+                ¿Olvidaste tu contraseña?
+              </Text>
             </TouchableOpacity>
           )}
 
           {/* Botón Principal */}
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[
+              styles.button, 
+              { backgroundColor: colors.primary },
+              loading && styles.buttonDisabled
+            ]}
             onPress={isLogin ? handleLogin : handleRegister}
             disabled={loading}
           >
@@ -309,16 +330,16 @@ export default function LoginScreen() {
 
           {/* Divisor */}
           <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>O</Text>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.textTertiary }]}>O</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
           {/* Toggle */}
           <TouchableOpacity onPress={toggleMode}>
-            <Text style={styles.toggleText}>
+            <Text style={[styles.toggleText, { color: colors.textSecondary }]}>
               {isLogin ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
-              <Text style={styles.toggleTextBold}>
+              <Text style={[styles.toggleTextBold, { color: colors.primary }]}>
                 {isLogin ? "Regístrate" : "Inicia sesión"}
               </Text>
             </Text>
@@ -329,11 +350,9 @@ export default function LoginScreen() {
   );
 }
 
-// ==================== ESTILOS ====================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
   },
   scrollContent: {
     flexGrow: 1,
@@ -351,23 +370,19 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#ffa3c2",
     justifyContent: "center",
     alignItems: "center",
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#ffa3c2",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: "#666",
     textAlign: "center",
   },
   form: {
-    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 24,
     shadowColor: "#000",
@@ -379,7 +394,6 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5F5F5",
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 16,
@@ -391,19 +405,16 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: "#1A1A1A",
   },
   forgotPassword: {
     alignSelf: "flex-end",
     marginBottom: 20,
   },
   forgotPasswordText: {
-    color: "#ffa3c2",
     fontSize: 14,
     fontWeight: "500",
   },
   button: {
-    backgroundColor: "#ffa3c2",
     borderRadius: 12,
     height: 56,
     justifyContent: "center",
@@ -426,20 +437,16 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E0E0E0",
   },
   dividerText: {
     marginHorizontal: 16,
-    color: "#999",
     fontSize: 14,
   },
   toggleText: {
     textAlign: "center",
     fontSize: 15,
-    color: "#666",
   },
   toggleTextBold: {
-    color: "#ffa3c2",
     fontWeight: "600",
   },
 });

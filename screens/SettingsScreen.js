@@ -3,22 +3,25 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useState } from "react";
 import {
-    Alert,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
+import { getColors } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { darkMode, toggleTheme } = useTheme();
+  const colors = getColors(darkMode);
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
 
   const handleLogout = async () => {
     if (Platform.OS === 'web') {
@@ -55,47 +58,54 @@ export default function SettingsScreen() {
 
   const SettingItem = ({ icon, title, subtitle, onPress, showArrow = true, rightElement }) => (
     <TouchableOpacity 
-      style={styles.settingItem}
+      style={[styles.settingItem, { borderBottomColor: colors.borderLight }]}
       onPress={onPress}
       disabled={!onPress && !rightElement}
     >
       <View style={styles.settingLeft}>
-        <View style={styles.iconContainer}>
-          <Ionicons name={icon} size={22} color="#ffa3c2" />
+        <View style={[styles.iconContainer, { backgroundColor: colors.primaryLight }]}>
+          <Ionicons name={icon} size={22} color={colors.primary} />
         </View>
         <View style={styles.settingText}>
-          <Text style={styles.settingTitle}>{title}</Text>
-          {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
+          <Text style={[styles.settingTitle, { color: colors.text }]}>{title}</Text>
+          {subtitle && (
+            <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
+              {subtitle}
+            </Text>
+          )}
         </View>
       </View>
       {rightElement ? rightElement : showArrow && (
-        <Ionicons name="chevron-forward" size={20} color="#999" />
+        <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
       )}
     </TouchableOpacity>
   );
 
   const SettingSection = ({ title, children }) => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.sectionContent}>
+      <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>{title}</Text>
+      <View style={[styles.sectionContent, { backgroundColor: colors.card }]}>
         {children}
       </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.surface} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { 
+        backgroundColor: colors.surface,
+        borderBottomColor: colors.border 
+      }]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => router.replace('/')}
         >
-          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Configuración</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Configuración</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -133,7 +143,7 @@ export default function SettingsScreen() {
               <Switch
                 value={notifications}
                 onValueChange={setNotifications}
-                trackColor={{ false: "#ddd", true: "#ffa3c2" }}
+                trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#fff"
               />
             }
@@ -147,7 +157,7 @@ export default function SettingsScreen() {
               <Switch
                 value={emailUpdates}
                 onValueChange={setEmailUpdates}
-                trackColor={{ false: "#ddd", true: "#ffa3c2" }}
+                trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#fff"
               />
             }
@@ -159,15 +169,14 @@ export default function SettingsScreen() {
           <SettingItem
             icon="moon-outline"
             title="Modo oscuro"
-            subtitle="Próximamente"
+            subtitle={darkMode ? "Activado" : "Desactivado"}
             showArrow={false}
             rightElement={
               <Switch
                 value={darkMode}
-                onValueChange={setDarkMode}
-                trackColor={{ false: "#ddd", true: "#ffa3c2" }}
+                onValueChange={toggleTheme}
+                trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#fff"
-                disabled
               />
             }
           />
@@ -207,13 +216,18 @@ export default function SettingsScreen() {
         </SettingSection>
 
         {/* Cerrar sesión */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color="#F44336" />
-          <Text style={styles.logoutText}>Cerrar sesión</Text>
+        <TouchableOpacity 
+          style={[styles.logoutButton, { backgroundColor: colors.card }]} 
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={22} color={colors.error} />
+          <Text style={[styles.logoutText, { color: colors.error }]}>Cerrar sesión</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Librería Gonvill © 2025</Text>
+          <Text style={[styles.footerText, { color: colors.textTertiary }]}>
+            Librería Gonvill © 2025
+          </Text>
         </View>
       </ScrollView>
     </View>
@@ -223,7 +237,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
   },
   header: {
     flexDirection: "row",
@@ -231,9 +244,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   backButton: {
     padding: 8,
@@ -241,7 +252,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#1A1A1A",
   },
   scrollContent: {
     paddingBottom: 32,
@@ -252,12 +262,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#999',
     paddingHorizontal: 16,
     marginBottom: 8,
   },
   sectionContent: {
-    backgroundColor: '#fff',
   },
   settingItem: {
     flexDirection: 'row',
@@ -266,7 +274,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
   },
   settingLeft: {
     flexDirection: 'row',
@@ -277,7 +284,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#fff5f9',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -288,18 +294,15 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#1A1A1A',
     marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: 13,
-    color: '#999',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginTop: 24,
     padding: 16,
@@ -309,7 +312,6 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F44336',
   },
   footer: {
     alignItems: 'center',
@@ -317,6 +319,5 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
-    color: '#999',
   },
 });

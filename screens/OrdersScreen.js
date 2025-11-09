@@ -3,18 +3,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    RefreshControl,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
+import { getColors } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const { darkMode } = useTheme();
+  const colors = getColors(darkMode);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -83,18 +87,20 @@ export default function OrdersScreen() {
 
     return (
       <TouchableOpacity
-        style={styles.orderCard}
+        style={[styles.orderCard, { backgroundColor: colors.card }]}
         activeOpacity={0.7}
         onPress={() => {
-          // Navegar a detalles de orden
           console.log('Ver orden:', item.order_id);
         }}
       >
-        {/* Header */}
-        <View style={styles.orderHeader}>
+        <View style={[styles.orderHeader, { borderBottomColor: colors.borderLight }]}>
           <View>
-            <Text style={styles.orderId}>Orden #{item.order_id}</Text>
-            <Text style={styles.orderDate}>{orderDate}</Text>
+            <Text style={[styles.orderId, { color: colors.text }]}>
+              Orden #{item.order_id}
+            </Text>
+            <Text style={[styles.orderDate, { color: colors.textSecondary }]}>
+              {orderDate}
+            </Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
             <Ionicons name={statusConfig.icon} size={14} color="#fff" />
@@ -102,32 +108,34 @@ export default function OrdersScreen() {
           </View>
         </View>
 
-        {/* Items */}
         <View style={styles.orderBody}>
           <View style={styles.orderRow}>
-            <Ionicons name="cube-outline" size={18} color="#666" />
-            <Text style={styles.orderInfo}>
+            <Ionicons name="cube-outline" size={18} color={colors.textSecondary} />
+            <Text style={[styles.orderInfo, { color: colors.textSecondary }]}>
               {item.items_count || 0} {item.items_count === 1 ? 'artículo' : 'artículos'}
             </Text>
           </View>
           
           {item.shipping_address && (
             <View style={styles.orderRow}>
-              <Ionicons name="location-outline" size={18} color="#666" />
-              <Text style={styles.orderInfo} numberOfLines={1}>
+              <Ionicons name="location-outline" size={18} color={colors.textSecondary} />
+              <Text style={[styles.orderInfo, { color: colors.textSecondary }]} numberOfLines={1}>
                 {item.shipping_address}
               </Text>
             </View>
           )}
         </View>
 
-        {/* Footer */}
-        <View style={styles.orderFooter}>
+        <View style={[styles.orderFooter, { borderTopColor: colors.borderLight }]}>
           <View>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalAmount}>${total.toFixed(2)}</Text>
+            <Text style={[styles.totalLabel, { color: colors.textTertiary }]}>
+              Total
+            </Text>
+            <Text style={[styles.totalAmount, { color: colors.success }]}>
+              ${total.toFixed(2)}
+            </Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#999" />
+          <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
         </View>
       </TouchableOpacity>
     );
@@ -135,26 +143,30 @@ export default function OrdersScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ffa3c2" />
-        <Text style={styles.loadingText}>Cargando órdenes...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          Cargando órdenes...
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.surface} />
 
-      {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { 
+        backgroundColor: colors.surface,
+        borderBottomColor: colors.border 
+      }]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => router.replace('/')}
         >
-          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mis Órdenes</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Mis Órdenes</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -164,15 +176,24 @@ export default function OrdersScreen() {
         renderItem={renderOrder}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#ffa3c2"]} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="receipt-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No tienes órdenes</Text>
-            <Text style={styles.emptySubtext}>Tus compras aparecerán aquí</Text>
+            <Ionicons name="receipt-outline" size={64} color={colors.textTertiary} />
+            <Text style={[styles.emptyText, { color: colors.text }]}>
+              No tienes órdenes
+            </Text>
+            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+              Tus compras aparecerán aquí
+            </Text>
             <TouchableOpacity 
-              style={styles.shopButton}
+              style={[styles.shopButton, { backgroundColor: colors.primary }]}
               onPress={() => router.replace('/')}
             >
               <Text style={styles.shopButtonText}>Explorar libros</Text>
@@ -187,18 +208,15 @@ export default function OrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#666",
   },
   header: {
     flexDirection: "row",
@@ -206,9 +224,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   backButton: {
     padding: 8,
@@ -216,13 +232,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#1A1A1A",
   },
   listContent: {
     padding: 16,
   },
   orderCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -239,17 +253,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
   },
   orderId: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1A1A1A',
     marginBottom: 4,
   },
   orderDate: {
     fontSize: 13,
-    color: '#666',
   },
   statusBadge: {
     flexDirection: 'row',
@@ -275,7 +286,6 @@ const styles = StyleSheet.create({
   },
   orderInfo: {
     fontSize: 14,
-    color: '#666',
     flex: 1,
   },
   orderFooter: {
@@ -284,17 +294,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
   },
   totalLabel: {
     fontSize: 12,
-    color: '#999',
     marginBottom: 2,
   },
   totalAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#2E7D32',
   },
   emptyContainer: {
     flex: 1,
@@ -305,17 +312,14 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#666',
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
     marginTop: 8,
     marginBottom: 24,
   },
   shopButton: {
-    backgroundColor: '#ffa3c2',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,

@@ -11,22 +11,25 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { getColors } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function CategoriesScreen() {
   const router = useRouter();
+  const { darkMode } = useTheme();
+  const colors = getColors(darkMode);
+  
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const API_BASE_URL = "http://localhost:8000"; 
 
-  // Obtener categorías desde la API
   const fetchCategories = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/categories`);
       const data = await response.json();
       console.log("📂 Categorías obtenidas:", data.length);
-      console.log("📊 Primera categoría:", data[0]); // Para ver si books_count viene
       setCategories(data);
       setLoading(false);
       setRefreshing(false);
@@ -46,7 +49,6 @@ export default function CategoriesScreen() {
     fetchCategories();
   };
 
-  // Iconos según categoría
   const getCategoryIcon = (categoryName) => {
     if (!categoryName || typeof categoryName !== 'string') {
       return 'book-outline';
@@ -66,19 +68,8 @@ export default function CategoriesScreen() {
     return 'book-outline';
   };
 
-  // Colores según categoría
   const getCategoryColor = (index) => {
-    const colors = [
-      '#FF6B9D', // Rosa
-      '#4ECDC4', // Turquesa
-      '#95E1D3', // Verde agua
-      '#FFD93D', // Amarillo
-      '#6BCB77', // Verde
-      '#4D96FF', // Azul
-      '#C44569', // Rojo oscuro
-      '#A8E6CF', // Verde claro
-    ];
-    return colors[index % colors.length];
+    return colors.categoryColors[index % colors.categoryColors.length];
   };
 
   const renderCategory = ({ item, index }) => {
@@ -89,11 +80,11 @@ export default function CategoriesScreen() {
 
     const icon = getCategoryIcon(item.name);
     const color = getCategoryColor(index);
-    const bookCount = item.books_count || 0; // 👈 Ahora viene de la API
+    const bookCount = item.books_count || 0;
 
     return (
       <TouchableOpacity
-        style={styles.categoryCard}
+        style={[styles.categoryCard, { backgroundColor: colors.card }]}
         activeOpacity={0.7}
         onPress={() => {
           console.log('📂 Categoría seleccionada:', item.name);
@@ -103,65 +94,69 @@ export default function CategoriesScreen() {
           });
         }}
       >
-        {/* Icono de categoría */}
         <View style={[styles.iconContainer, { backgroundColor: color }]}>
           <Ionicons name={icon} size={32} color="#fff" />
         </View>
 
-        {/* Información */}
         <View style={styles.categoryInfo}>
-          <Text style={styles.categoryName} numberOfLines={2}>
+          <Text style={[styles.categoryName, { color: colors.text }]} numberOfLines={2}>
             {item.name}
           </Text>
           <View style={styles.bookCountContainer}>
-            <Ionicons name="book" size={14} color="#666" />
-            <Text style={styles.bookCount}>
+            <Ionicons name="book" size={14} color={colors.textSecondary} />
+            <Text style={[styles.bookCount, { color: colors.textSecondary }]}>
               {bookCount} {bookCount === 1 ? 'libro' : 'libros'}
             </Text>
           </View>
         </View>
 
-        {/* Flecha */}
-        <Ionicons name="chevron-forward" size={20} color="#999" />
+        <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
       </TouchableOpacity>
     );
   };
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ffa3c2" />
-        <Text style={styles.loadingText}>Cargando categorías...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          Cargando categorías...
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.surface} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { 
+        backgroundColor: colors.surface,
+        borderBottomColor: colors.border 
+      }]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => router.push('/')}
         >
-          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Categorías</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Categorías</Text>
         
         <View style={{ width: 40 }} />
       </View>
 
       {/* Banner informativo */}
-      <View style={styles.banner}>
-        <View style={styles.bannerIconContainer}>
-          <Ionicons name="apps" size={24} color="#ffa3c2" />
+      <View style={[styles.banner, { backgroundColor: colors.card }]}>
+        <View style={[styles.bannerIconContainer, { backgroundColor: colors.primaryLight }]}>
+          <Ionicons name="apps" size={24} color={colors.primary} />
         </View>
         <View style={styles.bannerTextContainer}>
-          <Text style={styles.bannerTitle}>Explora por Categorías</Text>
-          <Text style={styles.bannerSubtitle}>
+          <Text style={[styles.bannerTitle, { color: colors.text }]}>
+            Explora por Categorías
+          </Text>
+          <Text style={[styles.bannerSubtitle, { color: colors.textSecondary }]}>
             Encuentra libros organizados por tema
           </Text>
         </View>
@@ -177,15 +172,18 @@ export default function CategoriesScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#ffa3c2"]}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="grid-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No hay categorías disponibles</Text>
+            <Ionicons name="grid-outline" size={64} color={colors.textTertiary} />
+            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
+              No hay categorías disponibles
+            </Text>
             <TouchableOpacity 
-              style={styles.retryButton}
+              style={[styles.retryButton, { backgroundColor: colors.primary }]}
               onPress={fetchCategories}
             >
               <Ionicons name="refresh" size={20} color="#fff" />
@@ -201,18 +199,15 @@ export default function CategoriesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#666",
   },
   header: {
     flexDirection: "row",
@@ -220,9 +215,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   backButton: {
     padding: 8,
@@ -230,11 +223,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#1A1A1A",
   },
   banner: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 8,
@@ -251,7 +242,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#fff5f9',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -262,12 +252,10 @@ const styles = StyleSheet.create({
   bannerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1A1A1A',
     marginBottom: 4,
   },
   bannerSubtitle: {
     fontSize: 13,
-    color: '#666',
   },
   listContent: {
     padding: 16,
@@ -275,7 +263,6 @@ const styles = StyleSheet.create({
   categoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -299,7 +286,6 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1A1A1A',
     marginBottom: 6,
   },
   bookCountContainer: {
@@ -309,7 +295,6 @@ const styles = StyleSheet.create({
   },
   bookCount: {
     fontSize: 13,
-    color: '#666',
   },
   emptyContainer: {
     flex: 1,
@@ -319,14 +304,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
     marginTop: 16,
     marginBottom: 20,
   },
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffa3c2',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,

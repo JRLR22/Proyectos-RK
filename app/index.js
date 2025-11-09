@@ -1,31 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Image } from "react-native";
-import DrawerMenu from "../screens/DrawerMenu";
-import { useCart } from './CartContext';
-
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Platform,
-  RefreshControl,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
-} from "react-native";
+import { ActivityIndicator, Alert, FlatList, Image, Platform, RefreshControl, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import 'react-native-gesture-handler';
+import { useCart } from '../contexts/CartContext';
+import { useTheme } from '../contexts/ThemeContext';
+import DrawerMenu from "../screens/DrawerMenu";
 
 export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams(); 
   const [drawerVisible, setDrawerVisible] = useState(false);
   const { addToCart, getCartCount } = useCart();
+  const { darkMode } = useTheme();
 
   // Estados
   const [books, setBooks] = useState([]);
@@ -38,18 +26,15 @@ export default function HomeScreen() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [favorites, setFavorites] = useState([]);
 
-  // 🔧 CAMBIA ESTO POR TU IP LOCAL
-  const API_BASE_URL = "http://localhost:8000"; // IP aquí
+  const API_BASE_URL = "http://localhost:8000";
 
-  //  Detectar cuando se recibe una categoría por parámetro
   useEffect(() => {
     if (params.category) {
       setSelectedCategory(params.category);
-      setSearchQuery(""); // Limpiar búsqueda al seleccionar categoría
+      setSearchQuery("");
     }
   }, [params.category]);
 
-  // Verifica si hay sesión al cargar
   useEffect(() => {
     checkAuth();
     loadFavorites();
@@ -60,8 +45,6 @@ export default function HomeScreen() {
     setIsLoggedIn(!!token);
   };
 
-
-    // Cargar favoritos
   const loadFavorites = async () => {
     try {
       const favData = await AsyncStorage.getItem('favorites');
@@ -73,19 +56,15 @@ export default function HomeScreen() {
     }
   };
 
-  // Verificar si un libro es favorito
   const isFavorite = (bookId) => {
     return favorites.some(fav => fav.book_id === bookId);
   };
 
-
-    // Toggle favorito
   const toggleFavorite = async (book) => {
     try {
       let updatedFavorites;
       
       if (isFavorite(book.book_id)) {
-        // Quitar de favoritos
         updatedFavorites = favorites.filter(fav => fav.book_id !== book.book_id);
         if (Platform.OS === 'web') {
           alert('Eliminado de favoritos');
@@ -93,7 +72,6 @@ export default function HomeScreen() {
           Alert.alert("Eliminado", "Se quitó de tus favoritos");
         }
       } else {
-        // Agregar a favoritos
         updatedFavorites = [...favorites, book];
         if (Platform.OS === 'web') {
           alert('Agregado a favoritos');
@@ -109,9 +87,6 @@ export default function HomeScreen() {
     }
   };
 
-
-
-  // Obtener libros desde la API
   const fetchBooks = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/books`);
@@ -128,20 +103,14 @@ export default function HomeScreen() {
     }
   };
 
-  // Obtener categorías desde la API
   const fetchCategories = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/categories`);
       const data = await response.json();
-      console.log(" Categorías obtenidas:", data.length);
-      
-      // Extraer nombres de categorías y agregar "Todos" al inicio
-   
-      const categoryNames = data.map(cat => cat.name);
-      setCategories(['Todos', ...categoryNames]);
+      console.log("📑 Categorías obtenidas:", data.length);
+      setCategories(['Todos',"Libros para todos","Terror","Novedades","Juveniles","Infantiles","Textos escolares"]);
     } catch (error) {
       console.error("❌ Error al obtener categorías:", error);
-      // Si falla, mantener "Todos" por defecto
     }
   };
 
@@ -150,18 +119,15 @@ export default function HomeScreen() {
     fetchCategories();
   }, []);
 
-  // Filtrar libros por búsqueda y categoría
   useEffect(() => {
     let filtered = books;
 
-    // Filtrar por categoría
     if (selectedCategory !== "Todos") {
       filtered = filtered.filter(
         (book) => book.category_name === selectedCategory
       );
     }
 
-    // Filtrar por búsqueda
     if (searchQuery.trim() !== "") {
       filtered = filtered.filter(
         (book) =>
@@ -179,7 +145,6 @@ export default function HomeScreen() {
     fetchCategories();
   };
 
-  // Configuración de estado del libro
   const getStatusConfig = (stock_quantity) => {
     if (stock_quantity === 0) {
       return { color: "#F44336", icon: "close-circle", text: "Agotado" };
@@ -206,63 +171,59 @@ export default function HomeScreen() {
     router.push('/cart');
   };
 
-  // HEADER - Optimizado con useCallback para evitar re-renders innecesarios
-  const renderHeader = useCallback(() => (
-    <View style={styles.headerContainer}>
-      <View style={styles.header}>
-        {/* Logo de Gonvill */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/images/logo_Gonvill_pink.png')}
-            style={{ width: 100, height: 50 }}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Iconos de navegación */}
-        <View style={styles.headerIcons}>
-          {/* Carrito */}
-          <TouchableOpacity style={styles.iconButton} onPress={handleCartPress}>
-            <Ionicons name="cart-outline" size={26} color="#1A1A1A" />
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{getCartCount()}</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Perfil */}
-          <TouchableOpacity style={styles.iconButton} onPress={handleProfilePress}>
-            <Ionicons 
-              name={isLoggedIn ? "person" : "person-outline"} 
-              size={26} 
-              color="#1A1A1A" 
-            />
-          </TouchableOpacity>
-
-          {/* Menú */}
-          <TouchableOpacity onPress={() => setDrawerVisible(true)}>
-            <Ionicons name="menu" size={28} color="#1A1A1A" />
-          </TouchableOpacity>
-        </View>
+  // ✅ Header fijo (Logo + íconos) - NO se recarga
+  const renderStaticHeader = () => (
+    <View style={[styles.staticHeader, darkMode && styles.staticHeaderDark]}>
+      <View style={styles.logoContainer}>
+        <Image
+          source={require('../assets/images/logo_Gonvill_pink.png')}
+          style={{ width: 100, height: 50 }}
+          resizeMode="contain"
+        />
       </View>
 
-      {/* Barra de búsqueda */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+      <View style={styles.headerIcons}>
+        <TouchableOpacity style={styles.iconButton} onPress={handleCartPress}>
+          <Ionicons name="cart-outline" size={26} color={darkMode ? "#fff" : "#1A1A1A"} />
+          <View style={styles.cartBadge}>
+            <Text style={styles.cartBadgeText}>{getCartCount()}</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.iconButton} onPress={handleProfilePress}>
+          <Ionicons 
+            name={isLoggedIn ? "person" : "person-outline"} 
+            size={26} 
+            color={isLoggedIn ? "#ffa3c2" : (darkMode ? "#fff" : "#1A1A1A")} 
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => setDrawerVisible(true)}>
+          <Ionicons name="menu" size={28} color={darkMode ? "#fff" : "#1A1A1A"} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  // ✅ Búsqueda, categorías y contador (dentro del scroll)
+  const renderSearchAndFilters = useCallback(() => (
+    <View style={[styles.filtersContainer, darkMode && styles.filtersContainerDark]}>
+      <View style={[styles.searchContainer, darkMode && styles.searchContainerDark]}>
+        <Ionicons name="search" size={20} color={darkMode ? "#999" : "#666"} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, darkMode && styles.searchInputDark]}
           placeholder="Buscar libros o autores..."
-          placeholderTextColor="#999"
+          placeholderTextColor={darkMode ? "#666" : "#999"}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-circle" size={20} color="#999" />
+            <Ionicons name="close-circle" size={20} color={darkMode ? "#666" : "#999"} />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Categorías */}
       {categories.length > 0 && (
         <FlatList
           horizontal
@@ -275,6 +236,8 @@ export default function HomeScreen() {
               style={[
                 styles.categoryChip,
                 selectedCategory === item && styles.categoryChipActive,
+                darkMode && styles.categoryChipDark,
+                darkMode && selectedCategory === item && styles.categoryChipActiveDark,
               ]}
               onPress={() => setSelectedCategory(item)}
             >
@@ -282,6 +245,7 @@ export default function HomeScreen() {
                 style={[
                   styles.categoryText,
                   selectedCategory === item && styles.categoryTextActive,
+                  darkMode && selectedCategory !== item && styles.categoryTextDark,
                 ]}
               >
                 {item}
@@ -291,24 +255,22 @@ export default function HomeScreen() {
         />
       )}
 
-      <Text style={styles.resultsText}>
+      <Text style={[styles.resultsText, darkMode && styles.resultsTextDark]}>
         {filteredBooks.length} {filteredBooks.length === 1 ? "libro encontrado" : "libros encontrados"}
       </Text>
     </View>
-  ), [searchQuery, selectedCategory, filteredBooks.length, isLoggedIn, getCartCount, categories]);
+  ), [searchQuery, selectedCategory, filteredBooks.length, categories, darkMode]);
 
-  // TARJETA DE LIBRO - Optimizado con useCallback
   const renderBook = useCallback(({ item }) => {
     const statusConfig = getStatusConfig(item.stock_quantity);
     const isBookFavorite = isFavorite(item.book_id);
 
     return (
       <TouchableOpacity 
-        style={styles.bookCard} 
+        style={[styles.bookCard, darkMode && styles.bookCardDark]} 
         activeOpacity={0.8}
         onPress={() => console.log("Ver detalles del libro:", item.title)}
       >
-        {/* Imagen de portada */}
         <View style={styles.bookImageContainer}>
           {item.cover_image ? (
             <Image 
@@ -326,44 +288,41 @@ export default function HomeScreen() {
             </View>
           )}
           
-          {/* Badge de estado */}
           <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
             <Ionicons name={statusConfig.icon} size={14} color="#fff" />
             <Text style={styles.statusText}>{statusConfig.text}</Text>
           </View>
 
-          {/*  BOTÓN DE FAVORITO */}
-              <TouchableOpacity 
-                style={[
-                  styles.favoriteButton,
-                  isBookFavorite && styles.favoriteButtonActive
-                ]}
-                onPress={() => toggleFavorite(item)}
-              >
-                <Ionicons 
-                  name={isBookFavorite ? "heart" : "heart-outline"} 
-                  size={22} 
-                  color={isBookFavorite ? "#F44336" : "#fff"} 
-                />
-              </TouchableOpacity>
+          <TouchableOpacity 
+            style={[
+              styles.favoriteButton,
+              isBookFavorite && styles.favoriteButtonActive
+            ]}
+            onPress={() => toggleFavorite(item)}
+          >
+            <Ionicons 
+              name={isBookFavorite ? "heart" : "heart-outline"} 
+              size={22} 
+              color={isBookFavorite ? "#F44336" : "#fff"} 
+            />
+          </TouchableOpacity>
         </View>
 
-        {/* Información del libro */}
         <View style={styles.bookInfo}>
-          <Text style={styles.bookTitle} numberOfLines={2}>
+          <Text style={[styles.bookTitle, darkMode && styles.bookTitleDark]} numberOfLines={2}>
             {item.title}
           </Text>
 
           <View style={styles.authorRow}>
-            <Ionicons name="person-outline" size={14} color="#666" />
-            <Text style={styles.bookAuthor} numberOfLines={1}>
+            <Ionicons name="person-outline" size={14} color={darkMode ? "#999" : "#666"} />
+            <Text style={[styles.bookAuthor, darkMode && styles.bookAuthorDark]} numberOfLines={1}>
               {item.authors || "Autor desconocido"}
             </Text>
           </View>
 
           <View style={styles.bookFooter}>
             <View>
-              <Text style={styles.priceLabel}>Precio</Text>
+              <Text style={[styles.priceLabel, darkMode && styles.priceLabelDark]}>Precio</Text>
               <Text style={styles.bookPrice}>
                 ${parseFloat(item.price).toFixed(2)}
               </Text>
@@ -396,26 +355,33 @@ export default function HomeScreen() {
         </View>
       </TouchableOpacity>
     );
-  }, [addToCart, API_BASE_URL, favorites]);
+  }, [addToCart, API_BASE_URL, favorites, darkMode]);
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, darkMode && styles.loadingContainerDark]}>
         <ActivityIndicator size="large" color="#ffa3c2" />
-        <Text style={styles.loadingText}>Cargando libros...</Text>
+        <Text style={[styles.loadingText, darkMode && styles.loadingTextDark]}>Cargando libros...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View style={[styles.container, darkMode && styles.containerDark]}>
+      <StatusBar 
+        barStyle={darkMode ? "light-content" : "dark-content"} 
+        backgroundColor={darkMode ? "#1A1A1A" : "#fff"} 
+      />
       
+      {/* ✅ Header fijo arriba - NO SE RECARGA */}
+      {renderStaticHeader()}
+      
+      {/* ✅ FlatList con búsqueda y libros */}
       <FlatList
         data={filteredBooks}
         keyExtractor={(item) => item.book_id.toString()}
         renderItem={renderBook}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={renderSearchAndFilters}
         contentContainerStyle={styles.listContent}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
@@ -428,9 +394,9 @@ export default function HomeScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="search-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No se encontraron libros</Text>
-            <Text style={styles.emptySubtext}>Intenta con otra búsqueda</Text>
+            <Ionicons name="search-outline" size={64} color={darkMode ? "#555" : "#ccc"} />
+            <Text style={[styles.emptyText, darkMode && styles.emptyTextDark]}>No se encontraron libros</Text>
+            <Text style={[styles.emptySubtext, darkMode && styles.emptySubtextDark]}>Intenta con otra búsqueda</Text>
           </View>
         }
       />
@@ -443,7 +409,6 @@ export default function HomeScreen() {
   );
 }
 
-// ESTILOS (sin cambios)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -460,20 +425,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
   },
-  headerContainer: {
+  
+  // ✅ NUEVO: Header estático fijo
+  staticHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  staticHeaderDark: {
+    backgroundColor: "#1A1A1A",
+    borderBottomColor: "#333",
+  },
+  
+  // ✅ NUEVO: Container para filtros
+  filtersContainer: {
     backgroundColor: "#fff",
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+  filtersContainerDark: {
+    backgroundColor: "#1A1A1A",
+    borderBottomColor: "#333",
   },
+  
   logoContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -510,6 +491,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     marginHorizontal: 16,
+    marginTop: 12,
     marginBottom: 12,
     height: 48,
   },
@@ -600,20 +582,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 4,
   },
-favoriteButton: {
-  position: "absolute",
-  top: 8,
-  left: 8,
-  backgroundColor: "rgba(0, 0, 0, 0.5)", // Fondo oscuro de icono favorito por defecto
-  width: 36,
-  height: 36,
-  borderRadius: 18,
-  justifyContent: "center",
-  alignItems: "center",
-},
-favoriteButtonActive: {
-  backgroundColor: "rgba(255, 255, 255, 0.95)", // Fondo blanco cuando es favorito
-},
+  favoriteButton: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  favoriteButtonActive: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+  },
   statusText: {
     color: "#fff",
     fontSize: 11,
@@ -683,5 +665,52 @@ favoriteButtonActive: {
     fontSize: 14,
     color: "#999",
     marginTop: 8,
+  },
+
+  // ESTILOS MODO OSCURO
+  containerDark: {
+    backgroundColor: "#121212",
+  },
+  loadingContainerDark: {
+    backgroundColor: "#121212",
+  },
+  loadingTextDark: {
+    color: "#ccc",
+  },
+  searchContainerDark: {
+    backgroundColor: "#2A2A2A",
+  },
+  searchInputDark: {
+    color: "#fff",
+  },
+  categoryChipDark: {
+    backgroundColor: "#2A2A2A",
+  },
+  categoryChipActiveDark: {
+    backgroundColor: "#ffa3c2",
+  },
+  categoryTextDark: {
+    color: "#ccc",
+  },
+  resultsTextDark: {
+    color: "#999",
+  },
+  bookCardDark: {
+    backgroundColor: "#1E1E1E",
+  },
+  bookTitleDark: {
+    color: "#fff",
+  },
+  bookAuthorDark: {
+    color: "#999",
+  },
+  priceLabelDark: {
+    color: "#666",
+  },
+  emptyTextDark: {
+    color: "#999",
+  },
+  emptySubtextDark: {
+    color: "#666",
   },
 });

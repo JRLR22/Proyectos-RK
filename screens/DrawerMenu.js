@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from "react";
 import {
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -12,9 +13,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { getColors } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function DrawerMenu({ visible, onClose }) {
   const router = useRouter();
+  const { darkMode } = useTheme();
+  const colors = getColors(darkMode);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -88,14 +93,12 @@ export default function DrawerMenu({ visible, onClose }) {
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        {/* Fondo oscuro clickeable */}
         <Pressable style={styles.backdrop} onPress={onClose} />
         
-        {/* Drawer */}
-        <View style={styles.drawer}>
+        <View style={[styles.drawer, { backgroundColor: colors.surface }]}>
           <ScrollView style={styles.drawerContent} showsVerticalScrollIndicator={false}>
             {/* Header del usuario */}
-            <View style={styles.userHeader}>
+            <View style={[styles.userHeader, { backgroundColor: colors.primary }]}>
               <TouchableOpacity 
                 style={styles.closeButton} 
                 onPress={onClose}
@@ -115,53 +118,62 @@ export default function DrawerMenu({ visible, onClose }) {
 
             {/* Navegación principal */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>NAVEGACIÓN</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
+                NAVEGACIÓN
+              </Text>
               {menuItems.map((item, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.menuItem}
                   onPress={() => navigateTo(item.route)}
                 >
-                  <Ionicons name={item.icon} size={24} color="#1A1A1A" />
-                  <Text style={styles.menuText}>{item.label}</Text>
-                  <Ionicons name="chevron-forward" size={20} color="#999" />
+                  <Ionicons name={item.icon} size={24} color={colors.text} />
+                  <Text style={[styles.menuText, { color: colors.text }]}>
+                    {item.label}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
               ))}
             </View>
 
-            {/* Divider */}
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             {/* Cuenta */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>CUENTA</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
+                CUENTA
+              </Text>
               {accountItems.map((item, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.menuItem}
                   onPress={() => navigateTo(item.route)}
                 >
-                  <Ionicons name={item.icon} size={24} color="#1A1A1A" />
-                  <Text style={styles.menuText}>{item.label}</Text>
-                  <Ionicons name="chevron-forward" size={20} color="#999" />
+                  <Ionicons name={item.icon} size={24} color={colors.text} />
+                  <Text style={[styles.menuText, { color: colors.text }]}>
+                    {item.label}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
               ))}
             </View>
 
-            {/* Divider */}
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             {/* Cerrar sesión */}
             <TouchableOpacity 
               style={styles.logoutItem}
               onPress={handleLogout}
             >
-              <Ionicons name="log-out-outline" size={24} color="#F44336" />
-              <Text style={styles.logoutText}>Cerrar Sesión</Text>
+              <Ionicons name="log-out-outline" size={24} color={colors.error} />
+              <Text style={[styles.logoutText, { color: colors.error }]}>
+                Cerrar Sesión
+              </Text>
             </TouchableOpacity>
 
-            {/* Versión */}
-            <Text style={styles.version}>Versión 1.0.0</Text>
+            <Text style={[styles.version, { color: colors.textTertiary }]}>
+              Versión 1.0.0
+            </Text>
           </ScrollView>
         </View>
       </View>
@@ -180,7 +192,6 @@ const styles = StyleSheet.create({
   },
   drawer: {
     width: 300,
-    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: -2, height: 0 },
     shadowOpacity: 0.25,
@@ -191,7 +202,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userHeader: {
-    backgroundColor: '#ffa3c2',
     paddingTop: 50,
     paddingBottom: 24,
     paddingHorizontal: 20,
@@ -231,7 +241,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#999',
     paddingHorizontal: 20,
     paddingBottom: 8,
     letterSpacing: 0.5,
@@ -245,13 +254,11 @@ const styles = StyleSheet.create({
   menuText: {
     flex: 1,
     fontSize: 16,
-    color: '#1A1A1A',
     marginLeft: 16,
     fontWeight: '500',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F0F0F0',
     marginVertical: 8,
     marginHorizontal: 20,
   },
@@ -265,14 +272,12 @@ const styles = StyleSheet.create({
   logoutText: {
     flex: 1,
     fontSize: 16,
-    color: '#F44336',
     marginLeft: 16,
     fontWeight: '600',
   },
   version: {
     textAlign: 'center',
     fontSize: 12,
-    color: '#999',
     paddingVertical: 24,
   },
 });
