@@ -288,7 +288,7 @@
 
                 <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
                     <input type="checkbox" required>
-                    <small>He leído y acepto la <a href="#" style="color:#ffa3c2;">política de privacidad</a>.</small>
+                    <small>He leído y acepto la <a href="{{ route('proteccion-datos') }}" style="color:#ffa3c2;">política de privacidad</a>.</small>
                 </div>
 
                 <button type="submit" class="btn-auth" style="margin-top:15px;">Registrarse</button>
@@ -299,19 +299,16 @@
         <div class="form-card">
             <h3 style="color:#ffa3c2; margin-bottom:20px; font-weight:700; font-family:'Poppins', sans-serif; font-size:20px;">Iniciar Sesión</h3>
 
-            <form method="POST" action="{{ route('login') }}">
-                @csrf
-
+           <form method="POST" action="{{ route('login') }}">
+            @csrf
                 <label>E-mail</label>
-                <input type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') error @enderror" placeholder="Correo electrónico" required>
-                @error('email')
-                    <span class="error-message">{{ $message }}</span>
-                @enderror
+                <input type="email" name="email" id="loginEmail" class="form-control" placeholder="Correo electrónico" required>
+                <span class="error-message" id="emailError" style="display:none;"></span>
 
                 <label>Contraseña</label>
                 <div class="password-box">
-                    <input type="password" name="password" id="loginPassword" placeholder="Contraseña" class="form-control @error('password') error @enderror" required>
-                    <span class="toggle-pass" data-input="loginPassword">
+                    <input type="password" name="password" id="loginPasswordInput" placeholder="Contraseña" class="form-control" required>
+                    <span class="toggle-pass" data-input="loginPasswordInput">
                         <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
                             <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
                         </svg>
@@ -320,9 +317,7 @@
                         </svg>
                     </span>
                 </div>
-                @error('password')
-                    <span class="error-message">{{ $message }}</span>
-                @enderror
+                <span class="error-message" id="passwordError" style="display:none;"></span>
 
                 <div style="text-align: right; margin-bottom: 15px;">
                     <a href="#" style="color:#ffa3c2; font-size:13px;">¿Olvidaste tu contraseña?</a>
@@ -333,6 +328,25 @@
         </div>
     </div>
 
+      <!-- Newsletter -->
+    <div class="bg-[#ffa3c2] py-6">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4 text-white">
+                    <i class="far fa-envelope text-5xl"></i>
+                    <div>
+                        <h3 class="text-xl font-bold">Boletín de Novedades</h3>
+                        <p class="text-sm">Suscríbete y estarás al tanto de nuestras novedades</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <input type="email" placeholder="Email" class="px-4 py-2 w-80 rounded focus:outline-none">
+                    <button class="bg-blue-900 text-white px-6 py-2 rounded hover:bg-blue-950">Suscribir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Footer -->
     <footer class="bg-gray-800 text-white py-12">
         <div class="container mx-auto px-4">
@@ -438,7 +452,51 @@
                 setTimeout(() => successMsg.remove(), 300);
             }, 5000);
         }
-    </script>
 
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPasswordInput').value;
+        
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ email, password })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Guardar token si lo necesitas
+                localStorage.setItem('token', data.token);
+                
+                // Redirigir según el rol
+                if (data.user.is_admin) {
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    window.location.href = '/profile';
+                }
+            } else {
+                // Mostrar error
+                document.getElementById('emailError').textContent = data.message || 'Credenciales incorrectas';
+                document.getElementById('emailError').style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al iniciar sesión');
+        }
+    });
+
+
+    </script>
+ 
+
+
+ 
 </body>
 </html>

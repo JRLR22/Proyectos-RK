@@ -236,4 +236,14 @@ class User extends Authenticatable
                     ->whereIn('status', [Order::STATUS_DELIVERED])
                     ->exists();
     }
+
+        /**
+     * Determina si el usuario es administrador (comparación por correo).
+     * Cambia el correo por el que tú desees usar como admin.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->email === 'admin@ejemplo.com'; // <- cambia por tu correo admin
+    }
+
 }

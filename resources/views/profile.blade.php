@@ -170,11 +170,21 @@
                     <i class="fab fa-youtube text-sm"></i>
                 </a>
             </div>
-            <div class="flex gap-4 items-center">
-                <a href="{{ route('contacto') }}" class="hover:underline">Contacto</a>
-                <a href="{{ route('profile') }}" class="flex items-center gap-1 hover:underline">
-                    <i class="fas fa-user"></i> {{ Auth::user()->first_name }}
-                </a>
+             <div class="flex gap-4 items-center">
+                <a href="#" class="hover:underline">Contacto</a>
+                @if (Auth::check())
+                    {{-- Si el usuario está autenticado, muestra su nombre --}}
+                    <a href="{{ route('profile') }}" class="flex items-center gap-1 hover:underline">
+                        <i class="fas fa-user"></i>
+                        {{ Auth::user()->first_name }}
+                    </a>
+                @else
+                    {{-- Si no hay sesión iniciada, muestra "Mi cuenta" --}}
+                    <a href="{{ route('mi.cuenta') }}" class="flex items-center gap-1 hover:underline">
+                        <i class="fas fa-user"></i>
+                        Mi cuenta
+                    </a>
+                @endif
             </div>
         </div>
     </div>

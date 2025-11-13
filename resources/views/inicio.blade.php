@@ -53,11 +53,21 @@
                     <i class="fab fa-youtube text-sm"></i>
                 </a>
             </div>
-            <div class="flex gap-4 items-center">
+             <div class="flex gap-4 items-center">
                 <a href="#" class="hover:underline">Contacto</a>
-                <a href="{{ route('mi.cuenta') }}" class="flex items-center gap-1 hover:underline">
-                    <i class="far fa-user"></i> Mi cuenta
-                </a>
+                @if (Auth::check())
+                   <!-- Si el usuario está autenticado, muestra su nombre -->
+                    <a href="{{ route('profile') }}" class="flex items-center gap-1 hover:underline">
+                        <i class="fas fa-user"></i>
+                        {{ Auth::user()->first_name }}
+                    </a>
+                @else
+                    <!-- Si no hay sesión iniciada, muestra "Mi cuenta" -->
+                    <a href="{{ route('mi.cuenta') }}" class="flex items-center gap-1 hover:underline">
+                        <i class="fas fa-user"></i>
+                        Mi cuenta
+                    </a>
+                @endif
             </div>
         </div>
     </div>
@@ -75,7 +85,7 @@
                     <div class="flex">
                         <input type="text" placeholder="Título, Autor, ISBN, Código Gonvill" 
                                class="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-sky-500">
-                        <button class="bg-[#ffa3c2] hover:bg-[#DE5484] text-white px-6 hover:bg-sky-600">
+                        <button class="bg-[#ffa3c2] hover:bg-[#FF82AE] text-white px-6">
                             <i class="fas fa-search"></i>
                         </button>
                     </div>

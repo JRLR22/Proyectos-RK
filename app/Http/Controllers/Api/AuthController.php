@@ -39,29 +39,35 @@ class AuthController extends Controller
         ], 201);
     }
 
-    // POST /api/login
-    public function login(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+   // POST /api/login
+   
+public function login(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
 
-        $user = User::where('email', $request->email)->first();
+    $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password_hash)) {
-            throw ValidationException::withMessages([
-                'email' => ['Las credenciales son incorrectas.'],
-            ]);
-        }
-
-        $token = $user->createToken('mobile-app')->plainTextToken;
-
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
+    if (!$user || !Hash::check($request->password, $user->password_hash)) {
+        throw ValidationException::withMessages([
+            'email' => ['Las credenciales son incorrectas.'],
         ]);
     }
+
+    $token = $user->createToken('mobile-app')->plainTextToken;
+
+    return response()->json([
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'is_admin' => $user->is_admin ?? false, // Incluye el rol de admin
+        ],
+        'token' => $token,
+    ]);
+}
 
     // POST /api/logout
     public function logout(Request $request)

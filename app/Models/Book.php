@@ -8,30 +8,32 @@ class Book extends Model
 {
     public $timestamps = true;
     
+    protected $table = 'books';
     protected $primaryKey = 'book_id';
     
     protected $fillable = [
-        'title',
-        'price',
-        'category_id',
         'isbn',
         'gonvill_code',
+        'title',
         'subtitle',
         'publisher',
         'publication_year',
         'edition',
         'language',
+        'price',
         'pages',
+        'stock_quantity',
         'description',
-        'cover_image', 
+        'cover_image',
+        'category_id',
         'status',
         'type'
     ];
 
-    // 🆕 AGREGAR ESTO: Accessors automáticos
+  
     protected $appends = [
         'cover_url',
-        'authors_list'
+       'authors_list'
     ];
 
     
@@ -43,15 +45,16 @@ class Book extends Model
     }
 
 
-    // 🆕 ACCESSOR: Lista de autores como string
-    public function authors() {
+    // ACCESSOR: Lista de autores como string
+    public function authors()
+     {
         return $this->belongsToMany(
             Author::class,
             'book_authors',
             'book_id',
             'author_id'
         )->withPivot('author_order')->orderBy('author_order');
-    }
+     }
 
     // Relación con reseñas
     public function reviews()
@@ -59,7 +62,7 @@ class Book extends Model
         return $this->hasMany(Review::class, 'book_id', 'book_id');
     }
 
-    // 🆕 ACCESSOR: URL completa de la imagen de portada
+    // ACCESSOR: URL completa de la imagen de portada
     public function getCoverUrlAttribute()
     {
         // Si no hay imagen, retornar placeholder
@@ -76,7 +79,7 @@ class Book extends Model
         return url('img/' . $this->cover_image);
     }
 
-    // 🆕 ACCESSOR: Lista de autores como string
+    //  ACCESSOR: Lista de autores como string
     public function getAuthorsListAttribute()
     {
         if (!$this->relationLoaded('authors')) {
@@ -85,7 +88,7 @@ class Book extends Model
         return $this->authors->pluck('name')->join(', ');
     }
 
-    // 🆕 ACCESSOR: Calificación promedio
+    //  ACCESSOR: Calificación promedio
     public function getAverageRatingAttribute()
     {
         if (!$this->relationLoaded('reviews')) {
@@ -94,7 +97,7 @@ class Book extends Model
         return $this->reviews->avg('rating') ?? 0;
     }
 
-    // 🆕 ACCESSOR: Total de reseñas
+    //  ACCESSOR: Total de reseñas
     public function getReviewsCountAttribute()
     {
         if (!$this->relationLoaded('reviews')) {

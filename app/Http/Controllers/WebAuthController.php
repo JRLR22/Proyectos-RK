@@ -72,34 +72,28 @@ class WebAuthController extends Controller
      */
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $request->validate([
             'email' => 'required|email',
             'password' => 'required',
-        ], [
-            'email.required' => 'El email es requerido',
-            'email.email' => 'Formato de email inválido',
-            'password.required' => 'La contraseña es requerida',
         ]);
 
-        // Buscar usuario por email
-        $user = User::where('email', $credentials['email'])->first();
+        $user = User::where('email', $request->email)->first();
 
-        // Verificar si existe y si la contraseña es correcta
-        if (!$user || !Hash::check($credentials['password'], $user->password_hash)) {
+        if (!$user || !Hash::check($request->password, $user->password_hash)) {
             return back()->withErrors([
                 'email' => 'Las credenciales son incorrectas.',
-            ])->withInput($request->only('email'));
+            ])->withInput();
         }
 
-        // Iniciar sesión
+        // Autenticar al usuario
         Auth::login($user);
 
-        
+        // Redirigir según el rol
+        if ($user->is_admin) {
+            return redirect()->route('admin.dashboard'); // ← AQUÍ ESTABA EL ERROR
+        }
 
-        // Regenerar sesión por seguridad
-        $request->session()->regenerate();
-
-        return redirect()->route('profile')->with('success', '¡Bienvenido de nuevo, ' . $user->first_name . '!');
+        return redirect()->route('profile');
     }
 
     /**
@@ -115,11 +109,12 @@ class WebAuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $isAdmin = auth()->user()->is_admin ?? false;
+        
         Auth::logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('inicio')->with('success', 'Sesión cerrada exitosamente');
+        return redirect()->route('inicio')->with('success', 'Sesión cerrada correctamente');
     }
 }
