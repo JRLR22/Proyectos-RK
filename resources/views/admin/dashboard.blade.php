@@ -188,7 +188,7 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         <i class="far fa-calendar-alt mr-1"></i>
-                                        {{ $book->created_at ? $book->created_at->format('d/m/Y') : 'Sin fecha' }}
+                                        {{ $book->updated_at ? $book->updated_at->format('d/m/Y') : 'Sin fecha' }}
                                     </td>
 
                                 </tr>
