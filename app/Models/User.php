@@ -33,9 +33,6 @@ class User extends Authenticatable
 
     // ==================== AUTH ====================
     
-    /**
-     * Laravel recibe 'password', pero la tabla usa 'password_hash'
-     */
 /**
  * Get the password for the user.
  *
@@ -46,7 +43,6 @@ class User extends Authenticatable
         return $this->password_hash;
     }
 
-        // NUEVO: Agregar esto también
     public function getAuthPasswordName()
     {
         return 'password_hash';
@@ -239,7 +235,6 @@ class User extends Authenticatable
 
         /**
      * Determina si el usuario es administrador (comparación por correo).
-     * Cambia el correo por el que tú desees usar como admin.
      */
     public function isAdmin(): bool
     {

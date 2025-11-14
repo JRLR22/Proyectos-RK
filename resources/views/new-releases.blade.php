@@ -130,187 +130,53 @@
         </div>
     </nav>
    
-    <!-- Contenido Principal -->
-    <div class="container mx-auto px-4 py-8">
-        <div class="flex gap-6">
-            <!-- Sidebar con filtros dinámicos -->
-            <aside class="w-64 flex-shrink-0">
-                <form method="GET" action="{{ route('impresion.demanda') }}" id="filterForm">
-                    <!-- Novedades -->
-                    <div class="mb-6">
-                        <h3 class="text-[#AD1850] font-bold text-lg mb-3">NOVEDADES</h3>
-                        <div class="space-y-2">
-                            <label class="flex justify-between text-[#2E2A2A] hover:text-[#5C5454] font-medium px-2 py-1 cursor-pointer">
-                                <div class="flex items-center gap-2">
-                                    <input type="radio" name="dias" value="30" 
-                                           {{ request('dias') == '30' ? 'checked' : '' }}
-                                           onchange="this.form.submit()">
-                                    <span>Últimos 30 días</span>
-                                </div>
-                                <span class="text-gray-400">({{ $stats['ultimos_30_dias'] }})</span>
-                            </label>
-                            <label class="flex justify-between text-[#2E2A2A] hover:text-[#5C5454] font-medium px-2 py-1 cursor-pointer">
-                                <div class="flex items-center gap-2">
-                                    <input type="radio" name="dias" value="60"
-                                           {{ request('dias') == '60' ? 'checked' : '' }}
-                                           onchange="this.form.submit()">
-                                    <span>Últimos 60 días</span>
-                                </div>
-                                <span class="text-gray-400">({{ $stats['ultimos_60_dias'] }})</span>
-                            </label>
-                        </div>
-                    </div>
+<div class="container mx-auto px-4 py-10">
 
-                    <!-- Precios -->
-                    <div class="mb-6">
-                        <h3 class="text-[#AD1850] font-bold text-lg mb-3">PRECIOS</h3>
-                        <div class="space-y-2 text-sm">
-                            <label class="flex justify-between text-[#2E2A2A] hover:text-[#5C5454] font-medium px-2 py-1 cursor-pointer">
-                                <div class="flex items-center gap-2">
-                                    <input type="radio" name="precio" value="menos_100"
-                                           {{ request('precio') == 'menos_100' ? 'checked' : '' }}
-                                           onchange="this.form.submit()">
-                                    <span>Menos de 100 pesos</span>
-                                </div>
-                                <span class="text-gray-400">({{ $stats['menos_100'] }})</span>
-                            </label>
-                            <label class="flex justify-between text-[#2E2A2A] hover:text-[#5C5454] font-medium px-2 py-1 cursor-pointer">
-                                <div class="flex items-center gap-2">
-                                    <input type="radio" name="precio" value="100_200"
-                                           {{ request('precio') == '100_200' ? 'checked' : '' }}
-                                           onchange="this.form.submit()">
-                                    <span>De 100 a 200 pesos</span>
-                                </div>
-                                <span class="text-gray-400">({{ $stats['entre_100_200'] }})</span>
-                            </label>
-                            <label class="flex justify-between text-[#2E2A2A] font-medium px-2 py-1 cursor-pointer">
-                                <div class="flex items-center gap-2">
-                                    <input type="radio" name="precio" value="200_300"
-                                           {{ request('precio') == '200_300' ? 'checked' : '' }}
-                                           onchange="this.form.submit()">
-                                    <span>De 200 a 300 pesos</span>
-                                </div>
-                                <span class="text-gray-400">({{ $stats['entre_200_300'] }})</span>
-                            </label>
-                            <label class="flex justify-between text-[#2E2A2A] font-medium px-2 py-1 cursor-pointer">
-                                <div class="flex items-center gap-2">
-                                    <input type="radio" name="precio" value="300_800"
-                                           {{ request('precio') == '300_800' ? 'checked' : '' }}
-                                           onchange="this.form.submit()">
-                                    <span>De 300 a 800 pesos</span>
-                                </div>
-                                <span class="text-gray-400">({{ $stats['entre_300_800'] }})</span>
-                            </label>
-                            <label class="flex justify-between text-[#2E2A2A] font-medium px-2 py-1 cursor-pointer">
-                                <div class="flex items-center gap-2">
-                                    <input type="radio" name="precio" value="mas_800"
-                                           {{ request('precio') == 'mas_800' ? 'checked' : '' }}
-                                           onchange="this.form.submit()">
-                                    <span>Más de 800 pesos</span>
-                                </div>
-                                <span class="text-gray-400">({{ $stats['mas_800'] }})</span>
-                            </label>
-                        </div>
-                    </div>
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">Novedades</h2>
+    <div class="w-full h-[6px] bg-gray-500 mb-8"></div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
 
-                    <!-- Disponibilidad -->
-                    <div>
-                        <h3 class="text-[#AD1850] font-bold text-lg mb-3">DISPONIBILIDAD</h3>
-                        <label class="flex justify-between text-[#2E2A2A] hover:text-[#5C5454] font-medium px-2 py-1 cursor-pointer">
-                            <div class="flex items-center gap-2">
-                                <input type="checkbox" name="disponibilidad" value="si"
-                                       {{ request('disponibilidad') == 'si' ? 'checked' : '' }}
-                                       onchange="this.form.submit()">
-                                <span>Disponibilidad</span>
-                            </div>
-                            <span class="text-gray-400">({{ $stats['disponibles'] }})</span>
-                        </label>
-                    </div>
+        @foreach ($books as $book)
+            <div class="bg-white shadow-md hover:shadow-lg transition rounded-lg p-3 text-center">
 
-                    <!-- Botón limpiar filtros -->
-                    @if(request()->hasAny(['dias', 'precio', 'disponibilidad']))
-                    <div class="mt-6">
-                        <a href="{{ route('impresion.demanda') }}" 
-                           class="block text-center bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded">
-                            Limpiar filtros
-                        </a>
-                    </div>
-                    @endif
-                </form>
-            </aside>
+                {{-- Portada --}}
+                <a href="#">
+                    <img src="{{ $book->cover_url }}"
+                         alt="{{ $book->title }}"
+                         class="w-full h-48 object-contain mx-auto">
+                </a>
 
-            <!-- Área de Productos -->
-            <main class="flex-1">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">{{ $books->total() }} resultados</h2>
-                    <div class="flex items-center gap-4">
-                        <form method="GET" action="{{ route('impresion.demanda') }}" class="flex items-center gap-4">
-                            <!-- Mantener filtros actuales -->
-                            @foreach(request()->except(['orden', 'per_page', 'page']) as $key => $value)
-                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-                            @endforeach
+                {{-- Título --}}
+                <h3 class="mt-3 text-sm font-bold text-gray-800 leading-tight">
+                    {{ strtoupper($book->title) }}
+                </h3>
 
-                            <select name="orden" onchange="this.form.submit()" class="border border-gray-300 px-3 py-2 rounded">
-                                <option value="">Ordenar por</option>
-                                <option value="disponibilidad" {{ request('orden') == 'disponibilidad' ? 'selected' : '' }}>Disponibilidad</option>
-                                <option value="titulo" {{ request('orden') == 'titulo' ? 'selected' : '' }}>Título</option>
-                                <option value="autor" {{ request('orden') == 'autor' ? 'selected' : '' }}>Autor</option>
-                                <option value="precio_asc" {{ request('orden') == 'precio_asc' ? 'selected' : '' }}>Precio: Menor a Mayor</option>
-                                <option value="precio_desc" {{ request('orden') == 'precio_desc' ? 'selected' : '' }}>Precio: Mayor a Menor</option>
-                                <option value="fecha_edicion" {{ request('orden') == 'fecha_edicion' ? 'selected' : '' }}>Fecha edición</option>
-                                <option value="recientes" {{ request('orden') == 'recientes' ? 'selected' : '' }}>Más recientes</option>
-                            </select>
-                            <div class="flex items-center gap-2">
-                                <span class="text-gray-600">Ver</span>
-                                <select name="per_page" onchange="this.form.submit()" class="border border-gray-300 px-2 py-1 rounded">
-                                    <option value="20" {{ request('per_page', 20) == 20 ? 'selected' : '' }}>20</option>
-                                    <option value="40" {{ request('per_page') == 40 ? 'selected' : '' }}>40</option>
-                                    <option value="60" {{ request('per_page') == 60 ? 'selected' : '' }}>60</option>
-                                </select>
-                                <span class="text-gray-600">Por página</span>
-                            </div>
-                        </form>
-                        <div class="flex gap-2">
-                            <button class="p-2 bg-sky-500 text-white rounded"><i class="fas fa-th"></i></button>
-                            <button class="p-2 border border-gray-300 rounded"><i class="fas fa-list"></i></button>
-                        </div>
-                    </div>
-                </div>
+                {{-- Autor --}}
+                @if($book->authors_list)
+                    <p class="text-xs text-gray-500 mt-1">
+                        {{ strtoupper($book->authors_list) }}
+                    </p>
+                @endif
 
-                <!-- Grid de Productos DINÁMICO -->
-                @if($books->count() > 0)
-                <div class="grid grid-cols-5 gap-4">
-                    @foreach($books as $book)
-                    <div class="bg-white border border-gray-200 rounded overflow-hidden hover:shadow-lg transition">
-                        <div class="relative">
-                            @if($book->type == 'Impresión bajo demanda')
-                            <span class="absolute top-2 left-2 bg-sky-500 text-white text-xs px-2 py-1 rounded z-10">
-                                Impresión bajo demanda
-                            </span>
-                            @endif
-                            
-                            <img src="{{ $book->cover_url }}" 
-                                 alt="{{ $book->title }}" 
-                                 class="w-full h-64 object-cover"
-                                 onerror="this.src='https://via.placeholder.com/200x280/6366f1/ffffff?text=Sin+Imagen'">
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-semibold text-sm mb-1 text-center line-clamp-2 h-10" title="{{ $book->title }}">
-                                {{ Str::upper($book->title) }}
-                            </h3>
-                            <p class="text-xs text-gray-600 text-center mb-2">
-                                {{ $book->authors_list ?: ($book->publisher ?: 'AAVV') }}
-                            </p>
-                            <p class="text-sky-600 font-bold text-center text-lg mb-2">
-                                ${{ number_format($book->price, 2) }}
-                            </p>
-                            <button class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600">
-                                Añadir <i class="fas fa-shopping-cart"></i>
-                            </button>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
+                {{-- Stock --}}
+                <p class="text-xs mt-1 {{ $book->status == 'En stock' ? 'text-green-600' : 'text-red-500' }}">
+                    {{ $book->status == 'En stock' ? 'EN STOCK' : 'AGOTADO' }}
+                </p>
+
+                {{-- Precio --}}
+                <p class="text-lg font-bold text-sky-600 mt-2">
+                    ${{ number_format($book->price, 2) }}
+                </p>
+
+                {{-- Botón --}}
+                <button class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600">
+                    Añadir <i class="fas fa-shopping-cart"></i>
+                </button>
+
+            </div>
+        @endforeach
+
+    </div>
 
                 <!-- Paginación -->
                 <div class="flex justify-center items-center gap-2 mt-8">
@@ -337,13 +203,6 @@
                         <span class="px-4 py-2 bg-gray-200 text-gray-400 rounded cursor-not-allowed">Última</span>
                     @endif
                 </div>
-                @else
-                <div class="text-center py-16">
-                    <i class="fas fa-book text-6xl text-gray-300 mb-4"></i>
-                    <h3 class="text-xl font-semibold text-gray-600 mb-2">No se encontraron libros</h3>
-                    <p class="text-gray-500">Intenta ajustar los filtros o limpiar la búsqueda</p>
-                </div>
-                @endif
             </main>
         </div>
     </div>

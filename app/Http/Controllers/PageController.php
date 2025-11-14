@@ -28,7 +28,7 @@ class PageController extends Controller
         // FILTRO: Novedades por días
         if ($request->has('dias')) {
             $dias = $request->input('dias');
-            $query->where('created_at', '>=', now()->subDays($dias));
+            $query->where('updated_at', '>=', now()->subDays($dias));
         }
 
         // FILTRO: Precio
@@ -95,9 +95,9 @@ class PageController extends Controller
         $stats = [
             'total' => Book::where('type', 'Impresión bajo demanda')->count(),
             'ultimos_30_dias' => Book::where('type', 'Impresión bajo demanda')
-                ->where('created_at', '>=', now()->subDays(30))->count(),
+                ->where('updated_at', '>=', now()->subDays(30))->count(),
             'ultimos_60_dias' => Book::where('type', 'Impresión bajo demanda')
-                ->where('created_at', '>=', now()->subDays(60))->count(),
+                ->where('updated_at', '>=', now()->subDays(60))->count(),
             'menos_100' => Book::where('type', 'Impresión bajo demanda')
                 ->where('price', '<', 100)->count(),
             'entre_100_200' => Book::where('type', 'Impresión bajo demanda')
@@ -115,6 +115,18 @@ class PageController extends Controller
         return view('impresion-bajo-demanda', compact('books', 'stats'));
     }
 
+     /**
+     * Muestra la página Novedades
+     */
+
+    public function newReleases()
+    {
+        // Obtiene los libros más recientes
+        $books = Book::orderBy('created_at', 'desc')->paginate(20);
+        return view('new-releases', compact('books'));
+
+    }
+
     /**
      * Muestra la página sobre nosotros
      */
@@ -128,7 +140,7 @@ class PageController extends Controller
      */
     public function nuestrasLibrerias()
     {
-        // Aquí puedes cargar las ubicaciones de las librerías desde la BD
+        // Cargar las ubicaciones de las librerías desde la BD
         $librerias = [
             [
                 'nombre' => 'Gonvill Centro',
@@ -136,7 +148,7 @@ class PageController extends Controller
                 'telefono' => '123-456-7890',
                 'horario' => 'Lun-Vie: 9:00-20:00'
             ],
-            // Más librerías...
+            
         ];
         
         return view('nuestras-librerias', compact('librerias'));

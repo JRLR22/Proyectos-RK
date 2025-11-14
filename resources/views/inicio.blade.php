@@ -126,7 +126,7 @@
                           <div>
                               <h4 class="font-bold text-gray-800 mb-3">EXPLORAR</h4>
                               <ul class="space-y-2 text-sm">
-                                  <li><a href="#" class="text-gray-600 hover:text-sky-500">Novedades</a></li>
+                                  <li><a href="{{ route('new.releases') }}" class="text-gray-600 hover:text-sky-500">Novedades</a></li>
                               </ul>
                           </div>
                           <div>

@@ -90,7 +90,7 @@ class WebAuthController extends Controller
 
         // Redirigir según el rol
         if ($user->is_admin) {
-            return redirect()->route('admin.dashboard'); // ← AQUÍ ESTABA EL ERROR
+            return redirect()->route('admin.dashboard'); 
         }
 
         return redirect()->route('profile');

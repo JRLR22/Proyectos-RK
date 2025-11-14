@@ -44,6 +44,7 @@ Route::get('/bolsa-de-trabajo', [PageController::class, 'bolsaTrabajo'])->name('
 Route::get('/ayuda', [PageController::class, 'ayuda'])->name('ayuda');
 Route::get('/schoolshop', [PageController::class, 'schoolShop'])->name('schoolshop');
 Route::get('/contacto', [PageController::class, 'contacto'])->name('contacto');
+Route::get('/new-releases', [PageController::class, 'newReleases'])->name('new.releases');
 
 // Rutas de libros
 Route::prefix('libros')->name('libros.')->group(function () {
