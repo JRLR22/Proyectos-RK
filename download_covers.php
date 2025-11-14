@@ -9,7 +9,7 @@
  */
 
 // Configuración
-$coversPath = __DIR__ . '/storage/app/public/covers/';
+$coversPath = __DIR__ . '/public/img/covers';
 $placeholderColor = '#2c3e50'; // Color de fondo para placeholders
 $textColor = '#ecf0f1'; // Color del texto
 
