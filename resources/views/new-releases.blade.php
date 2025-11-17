@@ -84,17 +84,28 @@
                         <i class="far fa-heart text-2xl text-gray-700"></i>
                         <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
                     </a>
-                    <a href="#" class="flex items-center gap-2">
+                    <a href="{{ route('cart.index') }}" class="flex items-center gap-2">
                         <div class="relative">
                             <i class="fas fa-shopping-cart text-2xl text-gray-800"></i>
                         </div>
+                        <span id="cart-count" class="absolute -top-2 -right-2 bg-[#ffa3c2] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
                         <span class="text-gray-700">Mi compra</span>
                     </a>
                 </div>
             </div>
         </div>
     </div>
+    @if(session('success'))
+    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mx-4 my-4" role="alert">
+        <span class="block sm:inline">{{ session('success') }}</span>
+    </div>
+    @endif
 
+    @if(session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mx-4 my-4" role="alert">
+            <span class="block sm:inline">{{ session('error') }}</span>
+        </div>
+    @endif
     <!-- Menú de Navegación -->
     <nav class="bg-white border-t border-b border-gray-200 sticky top-32 z-[98]">
         <div class="container mx-auto px-4">
@@ -169,9 +180,14 @@
                 </p>
 
                 {{-- Botón --}}
-                <button class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600">
-                    Añadir <i class="fas fa-shopping-cart"></i>
-                </button>
+              <form action="{{ route('cart.add') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="book_id" value="{{ $book->book_id }}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600">
+                        Añadir <i class="fas fa-shopping-cart"></i>
+                    </button>
+                </form>
 
             </div>
         @endforeach
@@ -286,5 +302,6 @@
             </div>
         </div>
     </footer>
+    
 </body>
 </html>

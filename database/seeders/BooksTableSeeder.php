@@ -129,7 +129,7 @@ class BooksTableSeeder extends Seeder
                 'book_id' => 10, 'isbn' => '9786074007520', 'gonvill_code' => 'GON04007520',
                 'title' => 'CIEN AÑOS DE SOLEDAD', 'publisher' => 'Diana',
                 'publication_year' => 1967, 'price' => 350.00, 'stock_quantity' => 25,
-                'category_id' => 1, 'status' => 'En stock', 'type' => 'Papel',
+                'category_id' => 1, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/cien-anos-soledad.jpeg'
             ],
             [
@@ -143,7 +143,7 @@ class BooksTableSeeder extends Seeder
                 'book_id' => 12, 'isbn' => '9788408163282', 'gonvill_code' => 'GON05163282',
                 'title' => 'EL JUEGO DEL ÁNGEL', 'publisher' => 'Planeta',
                 'publication_year' => 2008, 'price' => 420.00, 'stock_quantity' => 12,
-                'category_id' => 1, 'status' => 'En stock', 'type' => 'Papel',
+                'category_id' => 1, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/juego-angel.jpeg'
             ],
 
@@ -159,7 +159,7 @@ class BooksTableSeeder extends Seeder
                 'book_id' => 4, 'isbn' => '9296075328881', 'gonvill_code' => 'GON12012050',
                 'title' => 'CÓDIGO BESTSELLER', 'publisher' => 'Berenice Ensayo',
                 'publication_year' => 2013, 'price' => 220.50, 'stock_quantity' => 1,
-                'category_id' => 2, 'status' => 'En stock', 'type' => 'Papel',
+                'category_id' => 2, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/CÓDIGO BESTSELLER.jpeg'
             ],
             [
@@ -182,21 +182,21 @@ class BooksTableSeeder extends Seeder
                 'book_id' => 5, 'isbn' => '9786075328891', 'gonvill_code' => 'GON02011960',
                 'title' => 'Creepy', 'publisher' => 'Planeta cómic',
                 'publication_year' => 2018, 'price' => 300.00, 'stock_quantity' => 30,
-                'category_id' => 3, 'status' => 'En stock', 'type' => 'Papel',
+                'category_id' => 3, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/creepy.png'
             ],
             [
                 'book_id' => 15, 'isbn' => '0987654321', 'gonvill_code' => '0987653421',
                 'title' => 'La llorona', 'publisher' => 'Facultad de informatica Culiacan',
                 'publication_year' => 2024, 'price' => 350.00, 'stock_quantity' => 22,
-                'category_id' => 3, 'status' => 'En stock', 'type' => 'Papel',
+                'category_id' => 3, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/LALLORONA.jpeg', 'description' => 'Leyenda urbana'
             ],
             [
                 'book_id' => 16, 'isbn' => '9788414017265', 'gonvill_code' => 'GON14017265',
                 'title' => 'CUENTOS MACABROS VOL.II', 'publisher' => 'Edelvives',
                 'publication_year' => 2021, 'price' => 801.00, 'stock_quantity' => 5,
-                'category_id' => 3, 'status' => 'En stock', 'type' => 'Papel',
+                'category_id' => 3, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/cuentos-macabros.jpeg',
                 'description' => 'Edgar Allan Poe ilustrado por Benjamin Lacombe'
             ],
@@ -235,14 +235,14 @@ class BooksTableSeeder extends Seeder
                 'book_id' => 6, 'isbn' => '9786075328991', 'gonvill_code' => 'GON02019960',
                 'title' => 'Historia de la sexualidad', 'publisher' => 'Siglo veintiuno',
                 'publication_year' => 2008, 'price' => 500.00, 'stock_quantity' => 19,
-                'category_id' => 4, 'status' => 'En stock', 'type' => 'Papel',
+                'category_id' => 4, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/historia_sexualidad.jpeg'
             ],
             [
                 'book_id' => 21, 'isbn' => '9786070118654', 'gonvill_code' => 'GON26801865',
                 'title' => 'LOS MEJORES RELATOS DE TERROR LLEVADOS AL CINE',
                 'publisher' => 'Alfaguara', 'publication_year' => 2018, 'price' => 150.00,
-                'stock_quantity' => 12, 'category_id' => 4, 'status' => 'En stock', 'type' => 'Papel',
+                'stock_quantity' => 12, 'category_id' => 4, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/relatos-terror-cine.jpeg'
             ],
             [
@@ -263,7 +263,7 @@ class BooksTableSeeder extends Seeder
                 'book_id' => 24, 'isbn' => '9780439023481', 'gonvill_code' => 'GON13023481',
                 'title' => 'LOS JUEGOS DEL HAMBRE', 'publisher' => 'RBA Molino',
                 'publication_year' => 2008, 'price' => 280.00, 'stock_quantity' => 18,
-                'category_id' => 4, 'status' => 'En stock', 'type' => 'Papel',
+                'category_id' => 4, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/juegos-hambre.jpeg'
             ],
             [
@@ -279,7 +279,7 @@ class BooksTableSeeder extends Seeder
                 'book_id' => 7, 'isbn' => '9786095328991', 'gonvill_code' => 'GON02149960',
                 'title' => 'THE LEGEND OF SLEEPY HOLLOW', 'publisher' => 'Random House',
                 'publication_year' => 2008, 'price' => 200.00, 'stock_quantity' => 29,
-                'category_id' => 5, 'status' => 'En stock', 'type' => 'Papel',
+                'category_id' => 5, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/THE LEGEND OF SLEEPY HOLLOW.jpeg'
             ],
             [
@@ -293,7 +293,7 @@ class BooksTableSeeder extends Seeder
                 'book_id' => 26, 'isbn' => '9786077942665', 'gonvill_code' => 'GON37660086',
                 'title' => 'CUENTOS DE TERROR PARA NIÑOS', 'publisher' => 'Delfín Editorial',
                 'publication_year' => 2020, 'price' => 28.50, 'stock_quantity' => 35,
-                'category_id' => 5, 'status' => 'En stock', 'type' => 'Papel',
+                'category_id' => 5, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/cuentos-terror-ninos.jpeg'
             ],
             [
@@ -307,7 +307,7 @@ class BooksTableSeeder extends Seeder
                 'book_id' => 28, 'isbn' => '9786075326160', 'gonvill_code' => 'GON02011702',
                 'title' => 'LIBRO INFANTIL ESFÉRICO: EL EXTRAORDINARIO MUNDO',
                 'publisher' => 'Silver Dolphin', 'publication_year' => 2023, 'price' => 450.00,
-                'stock_quantity' => 12, 'category_id' => 5, 'status' => 'En stock', 'type' => 'Papel',
+                'stock_quantity' => 12, 'category_id' => 5, 'status' => 'En stock', 'type' => 'Impresión bajo demanda',
                 'cover_image' => 'covers/libro-esferico-mundo.jpeg'
             ],
             [
@@ -491,6 +491,8 @@ class BooksTableSeeder extends Seeder
                 'category_id' => 8, 'status' => 'En stock', 'type' => 'Papel',
                 'cover_image' => 'covers/psicologia-color.jpeg'
             ],
+
+            
         ]; 
 
         foreach ($books as $book) {

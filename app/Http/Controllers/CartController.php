@@ -3,33 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
+use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Coupon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 
 class CartController extends Controller
 {
     /**
-     * Obtener el carrito actual
-     * GET /api/cart
+     * Mostrar vista del carrito (WEB)
+     * GET /cart
      */
     public function index()
     {
-        $cart = $this->getCart();
-        $cartWithDetails = $this->enrichCartWithBookDetails($cart);
-        $summary = $this->calculateCartSummary($cartWithDetails);
+        $cart = $this->getOrCreateCart();
+        $cartData = $this->formatCartResponse($cart);
 
-        return response()->json([
-            'success' => true,
-            'cart' => $cartWithDetails,
-            'summary' => $summary,
+        return view('cart', [
+            'cart' => $cartData['items'],
+            'summary' => $cartData['summary']
         ]);
     }
 
     /**
-     * Agregar producto al carrito
-     * POST /api/cart/add
+     * Agregar producto al carrito (WEB)
+     * POST /cart/add
      */
     public function add(Request $request)
     {
@@ -42,54 +42,41 @@ class CartController extends Controller
 
         // Verificar stock disponible
         if ($book->stock_quantity < $request->quantity) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Stock insuficiente. Solo quedan ' . $book->stock_quantity . ' unidades.',
-            ], 400);
+            return redirect()->back()->with('error', 'Stock insuficiente. Solo quedan ' . $book->stock_quantity . ' unidades.');
         }
 
-        $cart = $this->getCart();
+        $cart = $this->getOrCreateCart();
 
-        // Si el libro ya está en el carrito, sumar la cantidad
-        $existingItemKey = $this->findItemInCart($cart, $request->book_id);
+        // Buscar si el libro ya está en el carrito
+        $cartItem = $cart->items()->where('book_id', $request->book_id)->first();
 
-        if ($existingItemKey !== null) {
-            $newQuantity = $cart[$existingItemKey]['quantity'] + $request->quantity;
+        if ($cartItem) {
+            $newQuantity = $cartItem->quantity + $request->quantity;
 
             // Verificar que no exceda el stock
             if ($newQuantity > $book->stock_quantity) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No puedes agregar más de ' . $book->stock_quantity . ' unidades.',
-                ], 400);
+                return redirect()->back()->with('error', 'No puedes agregar más de ' . $book->stock_quantity . ' unidades.');
             }
 
-            $cart[$existingItemKey]['quantity'] = $newQuantity;
+            $cartItem->incrementQuantity($request->quantity);
         } else {
-            // Agregar nuevo item al carrito
-            $cart[] = [
+            // Crear nuevo item en el carrito
+            CartItem::create([
+                'cart_id' => $cart->cart_id,
                 'book_id' => $book->book_id,
                 'quantity' => $request->quantity,
-                'added_at' => now()->toIso8601String(),
-            ];
+                'price_at_addition' => $book->discounted_price ?? $book->price,            
+            ]);
         }
 
-        $this->saveCart($cart);
+        $cart->touch();
 
-        $cartWithDetails = $this->enrichCartWithBookDetails($cart);
-        $summary = $this->calculateCartSummary($cartWithDetails);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Producto agregado al carrito',
-            'cart' => $cartWithDetails,
-            'summary' => $summary,
-        ]);
+        return redirect()->route('cart.index')->with('success', '✅ Producto agregado al carrito');
     }
 
     /**
-     * Actualizar cantidad de un item
-     * PUT /api/cart/{book_id}
+     * Actualizar cantidad de un item (WEB)
+     * PUT /cart/{book_id}
      */
     public function update(Request $request, $bookId)
     {
@@ -98,94 +85,59 @@ class CartController extends Controller
         ]);
 
         $book = Book::findOrFail($bookId);
-        $cart = $this->getCart();
+        $cart = $this->getOrCreateCart();
 
-        $itemKey = $this->findItemInCart($cart, $bookId);
+        $cartItem = $cart->items()->where('book_id', $bookId)->first();
 
-        if ($itemKey === null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Producto no encontrado en el carrito',
-            ], 404);
+        if (!$cartItem) {
+            return redirect()->route('cart.index')->with('error', 'Producto no encontrado en el carrito');
         }
 
         // Verificar stock
         if ($request->quantity > $book->stock_quantity) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Stock insuficiente. Solo quedan ' . $book->stock_quantity . ' unidades.',
-            ], 400);
+            return redirect()->route('cart.index')->with('error', 'Stock insuficiente. Solo quedan ' . $book->stock_quantity . ' unidades.');
         }
 
-        $cart[$itemKey]['quantity'] = $request->quantity;
-        $this->saveCart($cart);
+        $cartItem->updateQuantity($request->quantity);
+        $cart->touch();
 
-        $cartWithDetails = $this->enrichCartWithBookDetails($cart);
-        $summary = $this->calculateCartSummary($cartWithDetails);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Cantidad actualizada',
-            'cart' => $cartWithDetails,
-            'summary' => $summary,
-        ]);
+        return redirect()->route('cart.index')->with('success', 'Cantidad actualizada');
     }
 
     /**
-     * Eliminar producto del carrito
-     * DELETE /api/cart/{book_id}
+     * Eliminar producto del carrito (WEB)
+     * DELETE /cart/{book_id}
      */
     public function remove($bookId)
     {
-        $cart = $this->getCart();
-        $itemKey = $this->findItemInCart($cart, $bookId);
+        $cart = $this->getOrCreateCart();
+        $cartItem = $cart->items()->where('book_id', $bookId)->first();
 
-        if ($itemKey === null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Producto no encontrado en el carrito',
-            ], 404);
+        if (!$cartItem) {
+            return redirect()->route('cart.index')->with('error', 'Producto no encontrado en el carrito');
         }
 
-        unset($cart[$itemKey]);
-        $cart = array_values($cart); // Reindexar el array
-        $this->saveCart($cart);
+        $cartItem->delete();
+        $cart->touch();
 
-        $cartWithDetails = $this->enrichCartWithBookDetails($cart);
-        $summary = $this->calculateCartSummary($cartWithDetails);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Producto eliminado del carrito',
-            'cart' => $cartWithDetails,
-            'summary' => $summary,
-        ]);
+        return redirect()->route('cart.index')->with('success', 'Producto eliminado del carrito');
     }
 
     /**
-     * Vaciar el carrito
-     * DELETE /api/cart/clear
+     * Vaciar el carrito (WEB)
+     * DELETE /cart/clear
      */
     public function clear()
     {
-        $this->saveCart([]);
+        $cart = $this->getOrCreateCart();
+        $cart->clear();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Carrito vaciado',
-            'cart' => [],
-            'summary' => [
-                'subtotal' => 0,
-                'discount' => 0,
-                'total' => 0,
-                'items_count' => 0,
-            ],
-        ]);
+        return redirect()->route('cart.index')->with('success', 'Carrito vaciado');
     }
 
     /**
-     * Aplicar cupón de descuento
-     * POST /api/cart/apply-coupon
+     * Aplicar cupón de descuento (WEB)
+     * POST /cart/apply-coupon
      */
     public function applyCoupon(Request $request)
     {
@@ -193,177 +145,178 @@ class CartController extends Controller
             'coupon_code' => 'required|string',
         ]);
 
-        $cart = $this->getCart();
+        $cart = $this->getOrCreateCart();
 
-        if (empty($cart)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'El carrito está vacío',
-            ], 400);
+        if ($cart->items->isEmpty()) {
+            return redirect()->route('cart.index')->with('error', 'El carrito está vacío');
         }
 
         // Buscar cupón
         $coupon = Coupon::byCode($request->coupon_code)->valid()->first();
 
         if (!$coupon) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cupón inválido o expirado',
-            ], 404);
+            return redirect()->route('cart.index')->with('error', 'Cupón inválido o expirado');
         }
-
-        // Calcular subtotal
-        $cartWithDetails = $this->enrichCartWithBookDetails($cart);
-        $summary = $this->calculateCartSummary($cartWithDetails);
 
         // Verificar si el usuario puede usar el cupón
         $userId = Auth::id();
-        $validation = $coupon->canBeUsedBy($userId, $summary['subtotal']);
+        $validation = $coupon->canBeUsedBy($userId, $cart->subtotal);
 
         if (!$validation['valid']) {
-            return response()->json([
-                'success' => false,
-                'message' => $validation['message'],
-            ], 400);
+            return redirect()->route('cart.index')->with('error', $validation['message']);
         }
 
-        // Guardar cupón en sesión
-        Session::put('cart_coupon', [
-            'coupon_id' => $coupon->coupon_id,
-            'code' => $coupon->code,
-            'discount_amount' => $validation['discount'],
-            'discount_text' => $coupon->discount_text,
-        ]);
+        // Aplicar cupón al carrito
+        $cart->applyCoupon($coupon, $validation['discount']);
 
-        // Recalcular con cupón
-        $summary = $this->calculateCartSummary($cartWithDetails);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Cupón aplicado correctamente',
-            'coupon' => Session::get('cart_coupon'),
-            'summary' => $summary,
-        ]);
+        return redirect()->route('cart.index')->with('success', 'Cupón aplicado correctamente');
     }
 
     /**
-     * Remover cupón aplicado
-     * DELETE /api/cart/remove-coupon
+     * Remover cupón aplicado (WEB)
+     * DELETE /cart/remove-coupon
      */
     public function removeCoupon()
     {
-        Session::forget('cart_coupon');
+        $cart = $this->getOrCreateCart();
+        $cart->removeCoupon();
 
-        $cart = $this->getCart();
-        $cartWithDetails = $this->enrichCartWithBookDetails($cart);
-        $summary = $this->calculateCartSummary($cartWithDetails);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Cupón removido',
-            'summary' => $summary,
-        ]);
+        return redirect()->route('cart.index')->with('success', 'Cupón removido');
     }
 
     // ==================== MÉTODOS AUXILIARES ====================
 
     /**
-     * Obtener carrito de la sesión
+     * Obtener o crear carrito según el contexto del usuario
      */
-    private function getCart()
+    private function getOrCreateCart()
     {
-        return Session::get('cart', []);
-    }
+        $userId = Auth::id();
 
-    /**
-     * Guardar carrito en sesión
-     */
-    private function saveCart($cart)
-    {
-        Session::put('cart', $cart);
-    }
+        if ($userId) {
+            // Usuario autenticado: buscar por user_id
+            $cart = Cart::with(['items.book.category', 'items.book.authors'])
+                ->forUser($userId)
+                ->active()
+                ->first();
 
-    /**
-     * Buscar un item en el carrito por book_id
-     */
-    private function findItemInCart($cart, $bookId)
-    {
-        foreach ($cart as $key => $item) {
-            if ($item['book_id'] == $bookId) {
-                return $key;
+            if (!$cart) {
+                // Crear carrito para usuario autenticado
+                $cart = Cart::create([
+                    'user_id' => $userId,
+                    'session_id' => null,
+                ]);
+
+                // Migrar carrito de sesión si existe
+                $this->migrateGuestCartToUser($cart);
+            }
+        } else {
+            // Usuario guest: usar session_id
+            $sessionId = $this->getOrCreateSessionId();
+
+            $cart = Cart::with(['items.book.category', 'items.book.authors'])
+                ->forSession($sessionId)
+                ->active()
+                ->first();
+
+            if (!$cart) {
+                $cart = Cart::create([
+                    'user_id' => null,
+                    'session_id' => $sessionId,
+                    'expires_at' => now()->addDays(30), // Expirar en 30 días
+                ]);
             }
         }
-        return null;
+
+        return $cart;
     }
 
     /**
-     * Enriquecer el carrito con detalles de los libros
+     * Obtener o crear session_id para guests
      */
-    private function enrichCartWithBookDetails($cart)
+    private function getOrCreateSessionId()
     {
-        if (empty($cart)) {
-            return [];
+        // Para auth normal de Laravel, usa el session ID nativo
+        return session()->getId();
+    }
+
+    /**
+     * Migrar carrito de guest a usuario autenticado
+     */
+    private function migrateGuestCartToUser(Cart $userCart)
+    {
+        $sessionId = session()->getId();
+
+        if (!$sessionId) {
+            return;
         }
 
-        $bookIds = array_column($cart, 'book_id');
-        $books = Book::with(['category', 'authors'])
-                     ->whereIn('book_id', $bookIds)
-                     ->get()
-                     ->keyBy('book_id');
+        $guestCart = Cart::forSession($sessionId)->first();
 
-        return array_map(function ($item) use ($books) {
-            $book = $books->get($item['book_id']);
+        if (!$guestCart || $guestCart->items->isEmpty()) {
+            return;
+        }
 
-            if (!$book) {
-                return null;
+        // Migrar items del carrito guest al carrito del usuario
+        foreach ($guestCart->items as $guestItem) {
+            $existingItem = $userCart->items()
+                ->where('book_id', $guestItem->book_id)
+                ->first();
+
+            if ($existingItem) {
+                // Si ya existe, sumar cantidades
+                $existingItem->incrementQuantity($guestItem->quantity);
+            } else {
+                // Si no existe, crear nuevo item
+                CartItem::create([
+                    'cart_id' => $userCart->cart_id,
+                    'book_id' => $guestItem->book_id,
+                    'quantity' => $guestItem->quantity,
+                    'price_at_addition' => $guestItem->price_at_addition,
+                ]);
             }
+        }
+
+        // Eliminar carrito guest
+        $guestCart->delete();
+    }
+
+    /**
+     * Formatear respuesta del carrito
+     */
+    private function formatCartResponse(Cart $cart)
+    {
+        $items = $cart->items->map(function ($item) {
+            $book = $item->book;
 
             return [
                 'book_id' => $book->book_id,
                 'title' => $book->title,
-                'authors' => $book->authors_list,
+                'authors' => $book->authors_list ?? 'Sin autor',
                 'cover_url' => $book->cover_url,
                 'price' => $book->price,
                 'discount_percentage' => $book->discount_percentage,
-                'discounted_price' => $book->discounted_price,
-                'quantity' => $item['quantity'],
-                'subtotal' => round($book->discounted_price * $item['quantity'], 2),
+                'discounted_price' => $book->discounted_price ?? $book->price,
+                'quantity' => $item->quantity,
+                'subtotal' => round($item->subtotal, 2),
                 'stock_available' => $book->stock_quantity,
                 'in_stock' => $book->in_stock,
                 'weight' => $book->weight ?? 0,
             ];
-        }, $cart);
-    }
+        })->values()->toArray();
 
-    /**
-     * Calcular resumen del carrito
-     */
-    private function calculateCartSummary($cartWithDetails)
-    {
-        $cartWithDetails = array_filter($cartWithDetails); // Remover nulls
-
-        $subtotal = array_sum(array_column($cartWithDetails, 'subtotal'));
-        $itemsCount = array_sum(array_column($cartWithDetails, 'quantity'));
-        $totalWeight = array_sum(array_map(function ($item) {
-            return $item['weight'] * $item['quantity'];
-        }, $cartWithDetails));
-
-        // Obtener descuento del cupón si existe
-        $couponDiscount = 0;
-        $coupon = Session::get('cart_coupon');
-        if ($coupon) {
-            $couponDiscount = $coupon['discount_amount'];
-        }
-
-        $total = $subtotal - $couponDiscount;
+        $summary = [
+            'subtotal' => round($cart->subtotal, 2),
+            'discount' => round($cart->discount_amount, 2),
+            'total' => round($cart->total, 2),
+            'items_count' => $cart->items_count,
+            'total_weight_grams' => $cart->total_weight,
+            'total_weight_kg' => round($cart->total_weight / 1000, 2),
+        ];
 
         return [
-            'subtotal' => round($subtotal, 2),
-            'discount' => round($couponDiscount, 2),
-            'total' => round(max($total, 0), 2), // No puede ser negativo
-            'items_count' => $itemsCount,
-            'total_weight_grams' => $totalWeight,
-            'total_weight_kg' => round($totalWeight / 1000, 2),
+            'items' => $items,
+            'summary' => $summary,
         ];
     }
 }

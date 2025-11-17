@@ -84,7 +84,7 @@
                         <i class="far fa-heart text-2xl text-gray-700"></i>
                         <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
                     </a>
-                    <a href="#" class="flex items-center gap-2">
+                    <a href="{{ route('cart.index') }}" class="flex items-center gap-2">
                         <div class="relative">
                             <i class="fas fa-shopping-cart text-2xl text-gray-800"></i>
                         </div>
@@ -304,9 +304,15 @@
                             <p class="text-sky-600 font-bold text-center text-lg mb-2">
                                 ${{ number_format($book->price, 2) }}
                             </p>
-                            <button class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600">
-                                Añadir <i class="fas fa-shopping-cart"></i>
-                            </button>
+                            {{-- Botón --}}
+                            <form action="{{ route('cart.add') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="book_id" value="{{ $book->book_id }}">
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">
+                                    Añadir <i class="fas fa-shopping-cart"></i>
+                                </button>
+                            </form>
                         </div>
                     </div>
                     @endforeach
