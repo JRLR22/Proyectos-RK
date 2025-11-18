@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { getColors } from '../constants/colors';
 import { useTheme } from '../contexts/ThemeContext';
+import { useCart } from '../contexts/CartContext';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -31,8 +32,9 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { reloadUser } = useCart();
 
-  const API_URL = "http://localhost:8000/api";
+  const API_URL = "http://10.0.2.2:8000/api";
 
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,6 +69,9 @@ export default function LoginScreen() {
 
       await AsyncStorage.setItem('userToken', data.token);
       await AsyncStorage.setItem('userData', JSON.stringify(data.user));
+
+      //Recargar carrito
+      await reloadUser();
 
       setLoading(false);
       Alert.alert("¡Éxito!", "Has iniciado sesión correctamente");

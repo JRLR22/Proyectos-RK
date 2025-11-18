@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { getColors } from '../constants/colors';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth} from '../contexts/AuthContext';
 
 export default function DrawerMenu({ visible, onClose }) {
   const router = useRouter();
@@ -38,33 +39,11 @@ export default function DrawerMenu({ visible, onClose }) {
       console.error('Error cargando usuario:', error);
     }
   };
+  //Nuevo logout llamando a AuthContext
+  const { logout } = useAuth();
 
-  const handleLogout = async () => {
-    const performLogout = async () => {
-      try {
-        await AsyncStorage.removeItem('userToken');
-        await AsyncStorage.removeItem('userData');
-        onClose();
-        router.replace('/');
-      } catch (error) {
-        console.error('Error al cerrar sesión:', error);
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        await performLogout();
-      }
-    } else {
-      Alert.alert(
-        "Cerrar sesión",
-        "¿Estás seguro de que deseas cerrar sesión?",
-        [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Cerrar sesión", style: "destructive", onPress: performLogout }
-        ]
-      );
-    }
+  const handleLogout = () => {
+    logout();
   };
 
   const menuItems = [

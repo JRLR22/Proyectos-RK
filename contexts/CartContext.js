@@ -14,35 +14,60 @@ export const useCart = () => {
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cartKey, setCartKey] = useState(null);
 
-  // Cargar carrito desde AsyncStorage al iniciar
+  //Cargar usuario
   useEffect(() => {
-    loadCart();
+    loadUser();
   }, []);
 
-  // Guardar carrito cada vez que cambie
+  // Cargar carrito con cartKey
   useEffect(() => {
-    if (!loading) {
-      saveCart();
+    if(!cartKey){
+      setCartItems([]);
+      setLoading(false);
+      return;
     }
-  }, [cartItems]);
+    loadCart();
+  }, [cartKey]);
+
+  const loadUser = async () => {
+    try {
+      const raw = await AsyncStorage.getItem('userData');
+      if (!raw) {
+        setCartKey(null);
+        setCartItems([]);
+        setLoading(false);
+        return;
+      }
+      const user = JSON.parse(raw);
+      const key = `cart_${user.user_id}`;
+      if(cartKey && cartKey !== key){
+        setCartItems([]);
+      }
+      setCartKey(key);
+    } catch (error) {
+      console.error("Error leyendo Información de Usuario:", error);
+      setCartKey(null);
+    }
+  };
 
   const loadCart = async () => {
     try {
-      const cartData = await AsyncStorage.getItem('cart');
-      if (cartData) {
-        setCartItems(JSON.parse(cartData));
-      }
-      setLoading(false);
+      const cartData = await AsyncStorage.getItem(cartKey);
+      setCartItems(cartData ? JSON.parse(cartData):[]);
     } catch (error) {
       console.error('Error cargando carrito:', error);
+    } finally{
       setLoading(false);
     }
   };
 
-  const saveCart = async () => {
+  const saveCart = async (items) => {
+    if(!cartKey)
+      return;
     try {
-      await AsyncStorage.setItem('cart', JSON.stringify(cartItems));
+      await AsyncStorage.setItem(cartKey, JSON.stringify(items));
     } catch (error) {
       console.error('Error guardando carrito:', error);
     }
@@ -52,24 +77,29 @@ export const CartProvider = ({ children }) => {
   const addToCart = (product) => {
     setCartItems((prevItems) => {
       const existingItem = prevItems.find(item => item.book_id === product.book_id);
-      
+      let updatedItems;
+      //Si existe incrementa la cantidad
       if (existingItem) {
-        // Si ya existe, incrementa la cantidad
-        return prevItems.map(item =>
+        updatedItems = prevItems.map(item =>
           item.book_id === product.book_id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       } else {
-        // Si no existe, agrégalo con cantidad 1
-        return [...prevItems, { ...product, quantity: 1 }];
+        updatedItems = [...prevItems, { ...product, quantity: 1 }];
       }
+      saveCart(updatedItems);
+      return updatedItems;
     });
   };
 
   // Eliminar producto del carrito
   const removeFromCart = (bookId) => {
-    setCartItems(prevItems => prevItems.filter(item => item.book_id !== bookId));
+    setCartItems(prevItems => {
+      const updatedItems = prevItems.filter(item => item.book_id !== bookId);
+      saveCart(updatedItems);
+      return updatedItems;
+    });
   };
 
   // Actualizar cantidad de un producto
@@ -78,41 +108,47 @@ export const CartProvider = ({ children }) => {
       removeFromCart(bookId);
       return;
     }
-
-    setCartItems(prevItems =>
-      prevItems.map(item =>
+    setCartItems(prevItems => {
+      const updatedItems = prevItems.map(item =>
         item.book_id === bookId
           ? { ...item, quantity: Math.min(quantity, item.stock_quantity) }
           : item
-      )
-    );
+      );
+      saveCart(updatedItems);
+      return updatedItems;
+    });
   };
 
   // Incrementar cantidad
   const incrementQuantity = (bookId) => {
-    setCartItems(prevItems =>
-      prevItems.map(item =>
+    setCartItems(prevItems => {
+      const updatedItems = prevItems.map(item =>
         item.book_id === bookId && item.quantity < item.stock_quantity
           ? { ...item, quantity: item.quantity + 1 }
           : item
-      )
-    );
+      );
+      saveCart(updatedItems);
+      return updatedItems;
+    });
   };
 
   // Decrementar cantidad
   const decrementQuantity = (bookId) => {
-    setCartItems(prevItems =>
-      prevItems.map(item =>
+    setCartItems(prevItems => {
+      const updatedItems = prevItems.map(item =>
         item.book_id === bookId && item.quantity > 1
           ? { ...item, quantity: item.quantity - 1 }
           : item
-      )
-    );
+      );
+      saveCart(updatedItems);
+      return updatedItems;
+    });
   };
 
   // Vaciar carrito
   const clearCart = () => {
     setCartItems([]);
+    saveCart([]);
   };
 
   // Calcular total
@@ -127,6 +163,16 @@ export const CartProvider = ({ children }) => {
     return cartItems.reduce((count, item) => count + item.quantity, 0);
   };
 
+  const reloadUser = async () => {
+    await loadUser();
+  };
+
+  const clearUserCart = () => {
+    setCartKey(null);
+    setCartItems([]);
+    setLoading(false);
+  };
+
   const value = {
     cartItems,
     addToCart,
@@ -138,6 +184,8 @@ export const CartProvider = ({ children }) => {
     getCartTotal,
     getCartCount,
     loading,
+    reloadUser,
+    clearUserCart,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

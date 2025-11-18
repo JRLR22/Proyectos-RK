@@ -25,8 +25,9 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [favorites, setFavorites] = useState([]);
+  const [favKey, setFavKey] = useState(null);
 
-  const API_BASE_URL = "http://localhost:8000";
+  const API_BASE_URL = "http://10.0.2.2:8000";
 
   useEffect(() => {
     if (params.category) {
@@ -37,22 +38,42 @@ export default function HomeScreen() {
 
   useEffect(() => {
     checkAuth();
-    loadFavorites();
+    loadUser();
   }, []);
 
   const checkAuth = async () => {
     const token = await AsyncStorage.getItem('userToken');
     setIsLoggedIn(!!token);
   };
+  
+  const loadUser = async () => {
+    console.log(await AsyncStorage.getAllKeys())
 
-  const loadFavorites = async () => {
     try {
-      const favData = await AsyncStorage.getItem('favorites');
-      if (favData) {
-        setFavorites(JSON.parse(favData));
+      const raw = await AsyncStorage.getItem('userData');
+      if (!raw) {
+        setFavKey(null);
+        setFavorites([]);
+        return;
       }
+
+      const user = JSON.parse(raw);
+      const key = `favorites_${user.user_id}`;
+
+      setFavKey(key);
+      loadFavorites(key);
+
     } catch (error) {
-      console.error("❌ Error cargando favoritos:", error);
+      console.error("Error leyendo la Información del Usuario:", error);
+    }
+  };
+
+  const loadFavorites = async (key) => {
+    try {
+      const favData = await AsyncStorage.getItem(key);
+        setFavorites(favData ? JSON.parse(favData):[]);
+    } catch (error) {
+      console.error("Error cargando favoritos:", error);
     }
   };
 
@@ -62,6 +83,10 @@ export default function HomeScreen() {
 
   const toggleFavorite = async (book) => {
     try {
+      if (!favKey) {
+        Alert.alert("Inicia sesión", "Necesitas iniciar sesión para agregar favoritos");
+        return;
+      }
       let updatedFavorites;
       
       if (isFavorite(book.book_id)) {
@@ -81,9 +106,9 @@ export default function HomeScreen() {
       }
       
       setFavorites(updatedFavorites);
-      await AsyncStorage.setItem('favorites', JSON.stringify(updatedFavorites));
+      await AsyncStorage.setItem(favKey, JSON.stringify(updatedFavorites));
     } catch (error) {
-      console.error("❌ Error guardando favorito:", error);
+      console.error("Error guardando favorito:", error);
     }
   };
 
@@ -91,13 +116,13 @@ export default function HomeScreen() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/books`);
       const data = await response.json();
-      console.log("📚 Libros obtenidos:", data.length);
+      console.log("Libros obtenidos:", data.length);
       setBooks(data);
       setFilteredBooks(data);
       setLoading(false);
       setRefreshing(false);
     } catch (error) {
-      console.error("❌ Error al obtener libros:", error);
+      console.error("Error al obtener libros:", error);
       setLoading(false);
       setRefreshing(false);
     }
@@ -107,10 +132,10 @@ export default function HomeScreen() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/categories`);
       const data = await response.json();
-      console.log("📑 Categorías obtenidas:", data.length);
+      console.log("Categorías obtenidas:", data.length);
       setCategories(['Todos',"Libros para todos","Terror","Novedades","Juveniles","Infantiles","Textos escolares"]);
     } catch (error) {
-      console.error("❌ Error al obtener categorías:", error);
+      console.error("Error al obtener categorías:", error);
     }
   };
 

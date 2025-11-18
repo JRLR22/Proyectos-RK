@@ -26,35 +26,56 @@ export default function FavoritesScreen() {
   const colors = getColors(darkMode);
   
   const [favorites, setFavorites] = useState([]);
+  const [favKey, setFavKey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const API_BASE_URL = "http://localhost:8000";
+  const API_BASE_URL = "http://10.0.2.2:8000";
 
   useEffect(() => {
-    loadFavorites();
+    loadUser();
   }, []);
+
+  const loadUser = async () => {
+    try{
+      const raw = await AsyncStorage.getItem('userData');
+      console.log("RAW USER DATA =", raw);
+      if(!raw){
+        setFavKey(null);
+        return;
+      }
+      const user = JSON.parse(raw);
+      setFavKey(`favorites_${user.user_id}`);
+    } catch(error){
+      console.error("Error leyendo Información de Usuario", error);
+      setFavKey(null);
+    }
+  };
+
+  useEffect(() => {
+    if(!favKey){
+      setLoading(false);
+      return;
+    }
+    loadFavorites();
+  }, [favKey]);
 
   const loadFavorites = async () => {
     try {
-      const favData = await AsyncStorage.getItem('favorites');
-      if (favData) {
-        setFavorites(JSON.parse(favData));
-      }
-      setLoading(false);
-      setRefreshing(false);
+      const favData = await AsyncStorage.getItem(favKey);
+      setFavorites(favData ? JSON.parse(favData):[]);
     } catch (error) {
-      console.error("❌ Error cargando favoritos:", error);
+      console.error("Error cargando favoritos:", error);
+    }
       setLoading(false);
       setRefreshing(false);
-    }
   };
 
   const removeFavorite = async (bookId) => {
     try {
       const updated = favorites.filter(item => item.book_id !== bookId);
       setFavorites(updated);
-      await AsyncStorage.setItem('favorites', JSON.stringify(updated));
+      await AsyncStorage.setItem(favKey, JSON.stringify(updated));
       
       if (Platform.OS === 'web') {
         alert('Eliminado de favoritos');
@@ -62,7 +83,7 @@ export default function FavoritesScreen() {
         Alert.alert("Eliminado", "Se quitó de tus favoritos");
       }
     } catch (error) {
-      console.error("❌ Error eliminando favorito:", error);
+      console.error("Error eliminando favorito:", error);
     }
   };
 

@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { getColors } from '../constants/colors';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -23,30 +24,11 @@ export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
 
-  const handleLogout = async () => {
-    if (Platform.OS === 'web') {
-      if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-        await AsyncStorage.removeItem('userToken');
-        router.replace('/login');
-      }
-    } else {
-      Alert.alert(
-        "Cerrar sesión",
-        "¿Estás seguro que deseas cerrar sesión?",
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Cerrar sesión",
-            style: "destructive",
-            onPress: async () => {
-              await AsyncStorage.removeItem('userToken');
-              router.replace('/login');
-            }
-          }
-        ]
-      );
-    }
-  };
+const { logout } = useAuth();
+
+const handleLogout = () => {
+  logout();
+};
 
   const clearCache = () => {
     if (Platform.OS === 'web') {

@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
-    Alert, Platform, ScrollView,
+    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { getColors } from '../constants/colors';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -40,41 +41,11 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    console.log("Botón presionado");
-    
-    const performLogout = async () => {
-      try {
-        await AsyncStorage.removeItem('userToken');
-        await AsyncStorage.removeItem('userData');
-        
-        console.log("Datos borrados de AsyncStorage");
-        router.replace('/');
-        console.log("Navegación ejecutada");
-      } catch (error) {
-        console.error('Error al cerrar sesión:', error);
-      }
-    };
+const { logout } = useAuth();
 
-    if (Platform.OS === 'web') {
-      if (window.confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        await performLogout();
-      }
-    } else {
-      Alert.alert(
-        "Cerrar sesión",
-        "¿Estás seguro de que deseas cerrar sesión?",
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Cerrar sesión",
-            style: "destructive",
-            onPress: performLogout
-          }
-        ]
-      );
-    }
-  };
+const handleLogout = () => {
+  logout();
+};
 
   if (loading) {
     return (
