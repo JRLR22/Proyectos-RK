@@ -166,7 +166,29 @@
 </nav>
 
 <!--AQUI PONER CODIGO-->
+<!--INICIA PESTAÑA BOLSA DE TRABAJO-->
+<main class="bg-[#fef0f5] py-12">
+    <div class="container mx-auto px-6 max-w-5xl text-gray-700">
 
+        <!-- Título "BOLSA DE TRABAJO" -->
+        <h1 class="text-3xl md:text-4xl font-semibold text-[#ff6392] text-center mb-6">
+            Bolsa de Trabajo
+        </h1>
+
+        <!--. . .-->
+
+        <!--Imagen bolsa-de-trabajo--> 
+        <div class="mt-12 flex justify-center">
+            <img src="{{ asset('img/bolsa-de-trabajo.png') }}" 
+                 alt="Bolsa de trabajo Gonvill" 
+                 class="rounded-2xl shadow-lg w-full border-4 border-[#ffa3c2]">
+        </div>
+
+
+
+    </div>
+</main>
+<!--TERMINA PESTAÑA BOLSA DE TRABAJO-->
 
       <!-- Newsletter -->
     <div class="bg-[#ffa3c2] py-6">
