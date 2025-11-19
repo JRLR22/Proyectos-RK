@@ -45,6 +45,8 @@ Route::get('/ayuda', [PageController::class, 'ayuda'])->name('ayuda');
 Route::get('/schoolshop', [PageController::class, 'schoolShop'])->name('schoolshop');
 Route::get('/contacto', [PageController::class, 'contacto'])->name('contacto');
 Route::get('/new-releases', [PageController::class, 'newReleases'])->name('new.releases');
+Route::get('/politicas-envios', [PageController::class, 'politicasenvios'])->name('politicas.envios');
+
 
 // Rutas de libros
 Route::prefix('libros')->name('libros.')->group(function () {

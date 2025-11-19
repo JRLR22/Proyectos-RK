@@ -203,7 +203,7 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Banner Envíos Gratis -->
         <div class="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
-            <a href="#">
+            <a href="{{ route('politicas.envios') }}">
                 <img src="{{ asset('img/banner_envios.jpg') }}" alt="Envíos Gratis en compras mayores a $399" class="w-full h-auto">
             </a>
         </div>

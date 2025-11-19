@@ -199,5 +199,10 @@ class PageController extends Controller
         return view('cart');
     }
 
+      public function politicasenvios()
+    {
+        return view('politicas-envios');
+    }
+
 
 }

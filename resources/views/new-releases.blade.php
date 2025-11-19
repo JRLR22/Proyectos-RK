@@ -118,7 +118,7 @@
                             <div>
                                 <h4 class="font-bold text-gray-800 mb-3">EXPLORAR</h4>
                                 <ul class="space-y-2 text-sm">
-                                    <li><a href="{{ route('new.releases') }}" class="text-gray-600 hover:text-sky-500">Novedades</a></li>
+                                    <li><a href="{{ route('new.releases') }}" class="text-gray-400 hover:text-sky-500">Novedades</a></li>
                                 </ul>
                             </div>
                             <div>
@@ -144,7 +144,7 @@
 <div class="container mx-auto px-4 py-10">
 
     <h2 class="text-2xl font-bold text-gray-800 mb-2">Novedades</h2>
-    <div class="w-full h-[6px] bg-gray-500 mb-8"></div>
+    <div class="w-full h-[3px] bg-pink-500 mb-8"></div>
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
 
         @foreach ($books as $book)
@@ -184,7 +184,7 @@
                     @csrf
                     <input type="hidden" name="book_id" value="{{ $book->book_id }}">
                     <input type="hidden" name="quantity" value="1">
-                    <button type="submit" class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600">
+                    <button type="submit" class="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">
                         Añadir <i class="fas fa-shopping-cart"></i>
                     </button>
                 </form>
