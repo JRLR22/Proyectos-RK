@@ -394,6 +394,14 @@ const renderHeroCarousel = useCallback(() => {
     }, 4000);
   };
 
+      const handleScroll = (e) => {
+      const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+      if (index !== currentSlideRef.current) {
+        currentSlideRef.current = index;
+        setCurrentSlide(index);
+      }
+    };
+
   const handleMomentumEnd = (e) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     currentSlideRef.current = index;
@@ -469,10 +477,7 @@ const renderHeroCarousel = useCallback(() => {
                 <View style={styles.carouselFooter}>
                   <Text style={styles.carouselPrice}>${parseFloat(book.price).toFixed(2)}</Text>
                   <TouchableOpacity
-                    style={styles.carouselButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleAddToCart(book);
+                    style={styles.carouselButton} onPress={(e) => {e.stopPropagation();handleAddToCart(book);
                     }}
                   >
                     <Ionicons name="cart" size={16} color="#fff" style={{ marginRight: 6 }} />
@@ -809,8 +814,9 @@ const styles = StyleSheet.create({
   },
 
   carouselContainer: {
-    height: 400,
+    height: 300,
     marginBottom: 16,
+    marginTop:16,
   },
   carouselSlide: {
     width: SCREEN_WIDTH,
@@ -831,9 +837,10 @@ const styles = StyleSheet.create({
   carouselContent: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-top',
+    marginTop:50,
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 20,
     gap: 16,
   },
   carouselBookCover: {
