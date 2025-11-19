@@ -14,8 +14,8 @@ import {
   View,
 } from "react-native";
 import { getColors } from '../constants/colors';
-import { useTheme } from '../contexts/ThemeContext';
 import { useCart } from '../contexts/CartContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -34,7 +34,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const { reloadUser } = useCart();
 
-  const API_URL = "http://10.0.2.2:8000/api";
+  const API_URL = "http://localhost:8000/api";
 
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

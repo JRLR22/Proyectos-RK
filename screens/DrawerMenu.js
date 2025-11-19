@@ -3,19 +3,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from "react";
 import {
-  Alert,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { getColors } from '../constants/colors';
+import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuth} from '../contexts/AuthContext';
 
 export default function DrawerMenu({ visible, onClose }) {
   const router = useRouter();
@@ -51,6 +49,7 @@ export default function DrawerMenu({ visible, onClose }) {
     { icon: "grid-outline", label: "Categorías", route: "/categories" },
     { icon: "cart-outline", label: "Mis Pedidos", route: "/orders" },
     { icon: "heart-outline", label: "Favoritos", route: "/favorites" },
+    { icon: "location-outline", label: "Ubicaciones", route: "/stores" },
   ];
 
   const accountItems = [
