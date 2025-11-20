@@ -15,9 +15,11 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { getImageUrl } from '../config/api';
 import { getColors } from '../constants/colors';
 import { useCart } from '../contexts/CartContext';
 import { useTheme } from '../contexts/ThemeContext';
+
 
 export default function FavoritesScreen() {
   const router = useRouter();
@@ -30,7 +32,7 @@ export default function FavoritesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const API_BASE_URL = "http://localhost:8000";
+  
 
   useEffect(() => {
     loadUser();
@@ -99,7 +101,7 @@ export default function FavoritesScreen() {
         <View style={[styles.bookImageContainer, { backgroundColor: colors.surface }]}>
           {item.cover_image ? (
             <Image 
-              source={{ uri: `${API_BASE_URL}/img/${item.cover_image}` }}
+              source={{ uri: getImageUrl(item.cover_image) }}
               style={styles.bookImage}
               resizeMode="cover"
             />

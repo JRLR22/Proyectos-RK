@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { API_BASE_URL } from '../config/api';
 import { getColors } from '../constants/colors';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -23,7 +24,6 @@ export default function OrdersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const API_BASE_URL = "http://localhost:8000";
 
   useEffect(() => {
     fetchOrders();
@@ -40,7 +40,7 @@ export default function OrdersScreen() {
       const response = await fetch(`${API_BASE_URL}/api/orders`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json' 
         }
       });
 

@@ -19,10 +19,12 @@ import {
   View
 } from "react-native";
 import 'react-native-gesture-handler';
+import { API_ENDPOINTS, apiFetch, getImageUrl } from '../config/api';
 import { useCart } from '../contexts/CartContext';
 import { useTheme } from '../contexts/ThemeContext';
 import DrawerMenu from "../screens/DrawerMenu";
 
+// Obtenemos el ancho de la pantalla para usarlo en el carrusel
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function HomeScreen() {
@@ -31,52 +33,55 @@ export default function HomeScreen() {
   const { addToCart, getCartCount } = useCart();
   const { darkMode } = useTheme();
 
-  // Estados existentes
-  const [drawerVisible, setDrawerVisible] = useState(false);
-  const [books, setBooks] = useState([]);
-  const [filteredBooks, setFilteredBooks] = useState([]);
-  const [categories, setCategories] = useState(["Todos"]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Todos");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [favorites, setFavorites] = useState([]);
-  const [favKey, setFavKey] = useState(null);
+  // Estados para manejar los datos y la interfaz
+  const [drawerVisible, setDrawerVisible] = useState(false); // Para abrir/cerrar el menú lateral
+  const [books, setBooks] = useState([]); // Todos los libros que vienen de la API
+  const [filteredBooks, setFilteredBooks] = useState([]); // Libros después de aplicar filtros
+  const [categories, setCategories] = useState(["Todos"]); // Categorías disponibles
+  const [loading, setLoading] = useState(true); // Para mostrar el spinner de carga
+  const [refreshing, setRefreshing] = useState(false); // Para el gesto de "pull to refresh"
+  const [searchQuery, setSearchQuery] = useState(""); // Lo que el usuario escribe en la búsqueda
+  const [selectedCategory, setSelectedCategory] = useState("Todos"); // Categoría seleccionada
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Si el usuario tiene sesión activa
+  const [favorites, setFavorites] = useState([]); // Lista de favoritos del usuario
+  const [favKey, setFavKey] = useState(null); // Clave para guardar favoritos en AsyncStorage
 
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const [currentSlide, setCurrentSlide] = useState(0);
+  // Referencias y valores para animaciones y el carrusel
+  const scrollY = useRef(new Animated.Value(0)).current; // Para animar el header al hacer scroll
+  const [currentSlide, setCurrentSlide] = useState(0); // Slide actual del carrusel
 
-  // --- Carousel refs y helpers (pegar aquí) ---
-  const carouselScrollRef = useRef(null);
-  const isUserScrolling = useRef(false);
-  const scrollTimer = useRef(null);
-  const autoScrollInterval = useRef(null);
-
-  // Ref para evitar stale closures con el índice actual
-  const currentSlideRef = useRef(0);
+  // Referencias específicas del carrusel para controlar el auto-scroll
+  const carouselScrollRef = useRef(null); // Referencia al FlatList del carrusel
+  const isUserScrolling = useRef(false); // Para saber si el usuario está tocando el carrusel
+  const scrollTimer = useRef(null); // Timer para reactivar el auto-scroll
+  const autoScrollInterval = useRef(null); // Intervalo del auto-scroll automático
+  const currentSlideRef = useRef(0); // Referencia al índice actual (evita problemas con closures)
 
 
-  const API_BASE_URL = "http://localhost:8000";
 
-  // Memorizar libros destacados
+  // useMemo calcula los libros destacados solo cuando cambia el array de books
+  // Esto optimiza el rendimiento porque no recalcula en cada render
   const featuredBooks = useMemo(() => {
+    // Primero buscamos libros de "Novedades" o con mucho stock
     let featured = books.filter(book => 
       book.category_name === "Novedades" || book.stock_quantity > 20
     );
     
+    // Si no hay suficientes, tomamos cualquier libro con stock
     if (featured.length < 5) {
       featured = books.filter(book => book.stock_quantity > 0).slice(0, 5);
     }
     
+    // Limitamos a 5 libros destacados máximo
     featured = featured.slice(0, 5);
     
     console.log('📚 Libros destacados:', featured.length, featured.map(b => b.title));
     return featured;
   }, [books]);
 
-  // Auto-scroll del carousel
+  // Este useEffect maneja el auto-scroll del carrusel
   useEffect(() => {
+    // Si hay 1 o menos libros, no tiene sentido hacer auto-scroll
     if (featuredBooks.length <= 1) {
       if (autoScrollInterval.current) {
         clearInterval(autoScrollInterval.current);
@@ -84,29 +89,36 @@ export default function HomeScreen() {
       return;
     }
 
+    // Limpiamos cualquier intervalo anterior
     if (autoScrollInterval.current) {
       clearInterval(autoScrollInterval.current);
     }
 
+    // Creamos un nuevo intervalo que cambia de slide cada 5 segundos
     autoScrollInterval.current = setInterval(() => {
+      // Si el usuario está tocando, no hacemos nada
       if (isUserScrolling.current) return;
 
+      // Calculamos el siguiente índice (cuando llega al final, vuelve a 0)
       const next = (currentSlideRef.current + 1) % featuredBooks.length;
 
       try {
+        // Intentamos hacer scroll al siguiente índice
         carouselScrollRef.current?.scrollToIndex?.({ index: next, animated: true });
       } catch (err) {
-        // fallback más robusto
+        // Si falla scrollToIndex, usamos scrollToOffset como alternativa
         carouselScrollRef.current?.scrollToOffset?.({
           offset: next * SCREEN_WIDTH,
           animated: true,
         });
       }
 
+      // Actualizamos el índice actual
       currentSlideRef.current = next;
       setCurrentSlide(next);
-    }, 5000);
+    }, 5000); // Cada 5 segundos
 
+    // Limpieza cuando el componente se desmonta o cambian los libros destacados
     return () => {
       if (autoScrollInterval.current) {
         clearInterval(autoScrollInterval.current);
@@ -114,41 +126,44 @@ export default function HomeScreen() {
     };
   }, [featuredBooks]);
 
-
-  // Header collapsible animation
+  // Animaciones para el header que se hace más pequeño al hacer scroll
   const headerHeight = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [80, 60],
-    extrapolate: 'clamp',
+    inputRange: [0, 100], // Rango de scroll
+    outputRange: [80, 60], // De 80px a 60px
+    extrapolate: 'clamp', // No pasarse de estos valores
   });
 
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 50],
-    outputRange: [1, 0.98],
+    outputRange: [1, 0.98], // Casi imperceptible, solo un toque de transparencia
     extrapolate: 'clamp',
   });
 
+  // Si viene una categoría por parámetro de navegación, la seleccionamos
   useEffect(() => {
     if (params.category) {
       setSelectedCategory(params.category);
-      setSearchQuery("");
+      setSearchQuery(""); // Limpiamos la búsqueda
     }
   }, [params.category]);
 
+  // Al montar el componente, verificamos si hay sesión activa
   useEffect(() => {
     checkAuth();
     loadUser();
   }, []);
 
+  // Verifica si hay un token guardado (usuario con sesión activa)
   const checkAuth = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      setIsLoggedIn(!!token);
+      setIsLoggedIn(!!token); // Convertimos a booleano
     } catch (error) {
       console.error("Error verificando sesión:", error);
     }
   };
   
+  // Carga los datos del usuario y sus favoritos
   const loadUser = async () => {
     try {
       const raw = await AsyncStorage.getItem('userData');
@@ -158,6 +173,7 @@ export default function HomeScreen() {
         return;
       }
       const user = JSON.parse(raw);
+      // Creamos una clave única para los favoritos de este usuario
       const key = `favorites_${user.user_id}`;
       setFavKey(key);
       loadFavorites(key);
@@ -166,6 +182,7 @@ export default function HomeScreen() {
     }
   };
 
+  // Carga los favoritos desde AsyncStorage
   const loadFavorites = async (key) => {
     try {
       const favData = await AsyncStorage.getItem(key);
@@ -175,12 +192,16 @@ export default function HomeScreen() {
     }
   };
 
+  // useCallback memoriza la función para que no se recree en cada render
+  // Verifica si un libro está en favoritos
   const isFavorite = useCallback((bookId) => {
     return favorites.some(fav => fav.book_id === bookId);
   }, [favorites]);
 
+  // Agrega o quita un libro de favoritos
   const toggleFavorite = useCallback(async (book) => {
     try {
+      // Si no hay clave de favoritos, el usuario no ha iniciado sesión
       if (!favKey) {
         Alert.alert("Inicia sesión", "Necesitas iniciar sesión para agregar favoritos");
         return;
@@ -190,6 +211,7 @@ export default function HomeScreen() {
       let updatedFavorites;
 
       if (isCurrentlyFavorite) {
+        // Quitamos el libro de favoritos
         updatedFavorites = favorites.filter(fav => fav.book_id !== book.book_id);
         if (Platform.OS === 'web') {
           alert('Eliminado de favoritos');
@@ -197,6 +219,7 @@ export default function HomeScreen() {
           Alert.alert("Eliminado", "Se quitó de tus favoritos");
         }
       } else {
+        // Agregamos el libro a favoritos
         updatedFavorites = [...favorites, book];
         if (Platform.OS === 'web') {
           alert('Agregado a favoritos');
@@ -205,6 +228,7 @@ export default function HomeScreen() {
         }
       }
       
+      // Actualizamos el estado y guardamos en AsyncStorage
       setFavorites(updatedFavorites);
       await AsyncStorage.setItem(favKey, JSON.stringify(updatedFavorites));
     } catch (error) {
@@ -213,13 +237,10 @@ export default function HomeScreen() {
     }
   }, [favorites, favKey]);
 
+  // Obtiene todos los libros de la API
   const fetchBooks = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/books`);
-      if (!response.ok) {
-        throw new Error('Error al obtener libros del servidor');
-      }
-      const data = await response.json();
+      const data = await apiFetch(API_ENDPOINTS.books);
       if (!Array.isArray(data)) {
         throw new Error('Formato de datos inválido');
       }
@@ -239,33 +260,37 @@ export default function HomeScreen() {
         ]
       );
     }
-  }, [API_BASE_URL]);
+  }, []);
 
+  // Obtiene las categorías disponibles
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/categories`);
-      const data = await response.json();
-      
+      const data = await apiFetch(API_ENDPOINTS.categories);
       const categoryNames = data.map(cat => cat.name);
       setCategories(['Todos', ...categoryNames]);
     } catch (error) {
       console.error("Error al obtener categorías:", error);
     }
-  }, [API_BASE_URL]);
+  }, []);
 
+  // Al montar, traemos libros y categorías
   useEffect(() => {
     fetchBooks();
     fetchCategories();
   }, []);
 
+  // Este useEffect filtra los libros según búsqueda y categoría
   useEffect(() => {
+    // Primero quitamos los libros destacados para que no aparezcan duplicados
     const featuredIds = featuredBooks.map(fb => fb.book_id);
     let filtered = books.filter(book => !featuredIds.includes(book.book_id));
 
+    // Filtramos por categoría si no es "Todos"
     if (selectedCategory !== "Todos") {
       filtered = filtered.filter(book => book.category_name === selectedCategory);
     }
 
+    // Filtramos por búsqueda si hay texto
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(book =>
@@ -277,12 +302,14 @@ export default function HomeScreen() {
     setFilteredBooks(filtered);
   }, [searchQuery, selectedCategory, books, featuredBooks]);
 
+  // Función para el gesto de "jalar hacia abajo para actualizar"
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchBooks();
     fetchCategories();
   }, [fetchBooks, fetchCategories]);
 
+  // Retorna la configuración visual según el stock disponible
   const getStatusConfig = useCallback((stock_quantity) => {
     if (stock_quantity === 0) {
       return { color: "#F44336", icon: "close-circle", text: "Agotado" };
@@ -297,23 +324,27 @@ export default function HomeScreen() {
     }
   }, []);
 
+  // Maneja el clic en el icono de perfil
   const handleProfilePress = useCallback(() => {
     if (isLoggedIn) {
-      router.push('/profile');
+      router.push('/profile'); // Si hay sesión, va al perfil
     } else {
-      router.push('login');
+      router.push('login'); // Si no, va al login
     }
   }, [isLoggedIn, router]);
 
+  // Navega al carrito
   const handleCartPress = useCallback(() => {
     router.push('/cart');
   }, [router]);
 
+  // Esta función ya no se usa porque ahora todas las tarjetas son del mismo tamaño
   const getCardSize = useCallback((index) => {
     const pattern = index % 6;
     return (pattern === 0 || pattern === 3) ? 'large' : 'small';
   }, []);
 
+  // Agrega un libro al carrito
   const handleAddToCart = useCallback((item) => {
     if (item.stock_quantity > 0) {
       addToCart(item);
@@ -325,6 +356,7 @@ export default function HomeScreen() {
     }
   }, [addToCart]);
 
+  // Renderiza el header superior con logo e iconos
   const renderStaticHeader = useCallback(() => (
     <Animated.View 
       style={[
@@ -345,6 +377,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.headerIcons}>
+        {/* Icono del carrito con badge de cantidad */}
         <TouchableOpacity style={styles.iconButton} onPress={handleCartPress}>
           <Ionicons name="cart-outline" size={26} color={darkMode ? "#fff" : "#1A1A1A"} />
           <View style={styles.cartBadge}>
@@ -352,6 +385,7 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* Icono de perfil que cambia si hay sesión */}
         <TouchableOpacity style={styles.iconButton} onPress={handleProfilePress}>
           <Ionicons 
             name={isLoggedIn ? "person" : "person-outline"} 
@@ -360,6 +394,7 @@ export default function HomeScreen() {
           />
         </TouchableOpacity>
 
+        {/* Icono de menú hamburguesa */}
         <TouchableOpacity onPress={() => setDrawerVisible(true)}>
           <Ionicons name="menu" size={28} color={darkMode ? "#fff" : "#1A1A1A"} />
         </TouchableOpacity>
@@ -367,34 +402,40 @@ export default function HomeScreen() {
     </Animated.View>
   ), [darkMode, headerHeight, headerOpacity, handleCartPress, handleProfilePress, getCartCount, isLoggedIn]);
 
-const renderHeroCarousel = useCallback(() => {
-  if (featuredBooks.length === 0) return null;
+  // Renderiza el carrusel de libros destacados
+  const renderHeroCarousel = useCallback(() => {
+    if (featuredBooks.length === 0) return null;
 
-  const handleIndicatorPress = (idx) => {
-    isUserScrolling.current = true;
-    clearTimeout(scrollTimer.current);
+    // Maneja el clic en los indicadores (puntitos de abajo)
+    const handleIndicatorPress = (idx) => {
+      isUserScrolling.current = true;
+      clearTimeout(scrollTimer.current);
 
-    carouselScrollRef.current?.scrollToIndex({ index: idx, animated: true });
-    currentSlideRef.current = idx;
-    setCurrentSlide(idx);
+      carouselScrollRef.current?.scrollToIndex({ index: idx, animated: true });
+      currentSlideRef.current = idx;
+      setCurrentSlide(idx);
 
-    scrollTimer.current = setTimeout(() => {
-      isUserScrolling.current = false;
-    }, 4000);
-  };
+      // Después de 4 segundos, reactivamos el auto-scroll
+      scrollTimer.current = setTimeout(() => {
+        isUserScrolling.current = false;
+      }, 4000);
+    };
 
-  const handleScrollBeginDrag = () => {
-    isUserScrolling.current = true;
-    if (scrollTimer.current) clearTimeout(scrollTimer.current);
-  };
+    // Cuando el usuario empieza a tocar el carrusel
+    const handleScrollBeginDrag = () => {
+      isUserScrolling.current = true;
+      if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    };
 
-  const handleScrollEndDrag = () => {
-    scrollTimer.current = setTimeout(() => {
-      isUserScrolling.current = false;
-    }, 4000);
-  };
+    // Cuando el usuario suelta el carrusel
+    const handleScrollEndDrag = () => {
+      scrollTimer.current = setTimeout(() => {
+        isUserScrolling.current = false;
+      }, 4000);
+    };
 
-      const handleScroll = (e) => {
+    // Detecta cambios mientras se hace scroll
+    const handleScroll = (e) => {
       const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
       if (index !== currentSlideRef.current) {
         currentSlideRef.current = index;
@@ -402,111 +443,121 @@ const renderHeroCarousel = useCallback(() => {
       }
     };
 
-  const handleMomentumEnd = (e) => {
-    const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-    currentSlideRef.current = index;
-    setCurrentSlide(index);
-  };
+    // Cuando termina el momentum del scroll
+    const handleMomentumEnd = (e) => {
+      const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+      currentSlideRef.current = index;
+      setCurrentSlide(index);
+    };
 
-  const handleScrollToIndexFailed = (info) => {
-    // fallback robusto
-    const offset = info.index * SCREEN_WIDTH;
-    carouselScrollRef.current?.scrollToOffset?.({ offset, animated: true });
-  };
+    // Si scrollToIndex falla, usamos scrollToOffset como fallback
+    const handleScrollToIndexFailed = (info) => {
+      const offset = info.index * SCREEN_WIDTH;
+      carouselScrollRef.current?.scrollToOffset?.({ offset, animated: true });
+    };
 
-  return (
-    <View style={styles.carouselContainer}>
-      <FlatList
-        key={"featured-carousel"}          // evita reinicios
-        ref={carouselScrollRef}
-        data={featuredBooks}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        decelerationRate="fast"
-        onScrollBeginDrag={handleScrollBeginDrag}
-        onScrollEndDrag={handleScrollEndDrag}
-        onMomentumScrollEnd={handleMomentumEnd}
-        onScrollToIndexFailed={handleScrollToIndexFailed}
-        getItemLayout={(data, index) => ({
-          length: SCREEN_WIDTH,
-          offset: SCREEN_WIDTH * index,
-          index,
-        })}
-        keyExtractor={(item) => item.book_id?.toString() ?? Math.random().toString()}
-        renderItem={({ item: book }) => (
-          <TouchableOpacity
-            key={book.book_id}
-            style={styles.carouselSlide}
-            activeOpacity={0.95}
-            onPress={() => console.log('Ver libro:', book.title)}
-          >
-            {book.cover_image ? (
-              <Image
-                source={{ uri: `${API_BASE_URL}/img/${book.cover_image}` }}
-                style={styles.carouselImage}
-                blurRadius={40}
-              />
-            ) : (
-              <View style={[styles.carouselImage, { backgroundColor: '#333' }]} />
-            )}
-            <View style={styles.carouselGradient} />
+    return (
+      <View style={styles.carouselContainer}>
+        <FlatList
+          key={"featured-carousel"} // Key fijo para evitar reinicios
+          ref={carouselScrollRef}
+          data={featuredBooks}
+          horizontal // Scroll horizontal
+          pagingEnabled // Se ajusta a cada pantalla completa
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          onScrollBeginDrag={handleScrollBeginDrag}
+          onScrollEndDrag={handleScrollEndDrag}
+          onMomentumScrollEnd={handleMomentumEnd}
+          onScrollToIndexFailed={handleScrollToIndexFailed}
+          // getItemLayout mejora el rendimiento al decirle el tamaño exacto
+          getItemLayout={(data, index) => ({
+            length: SCREEN_WIDTH,
+            offset: SCREEN_WIDTH * index,
+            index,
+          })}
+          keyExtractor={(item) => item.book_id?.toString() ?? Math.random().toString()}
+          renderItem={({ item: book }) => (
+            <TouchableOpacity
+              key={book.book_id}
+              style={styles.carouselSlide}
+              activeOpacity={0.95}
+              onPress={() => console.log('Ver libro:', book.title)}
+            >
+              {/* Imagen de fondo borrosa */}
+              {book.cover_image ? (
+                <Image
+                  source={{ uri: getImageUrl(book.cover_image) }}
+                  style={styles.carouselImage}
+                  blurRadius={40} // Efecto blur
+                />
+              ) : (
+                <View style={[styles.carouselImage, { backgroundColor: '#333' }]} />
+              )}
+              {/* Capa oscura encima */}
+              <View style={styles.carouselGradient} />
 
-            <View style={styles.carouselContent}>
-              <View style={styles.carouselBookCover}>
-                {book.cover_image ? (
-                  <Image
-                    source={{ uri: `${API_BASE_URL}/img/${book.cover_image}` }}
-                    style={styles.carouselCoverImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={styles.bookImagePlaceholder}>
-                    <Ionicons name="book" size={60} color="#999" />
+              <View style={styles.carouselContent}>
+                {/* Portada del libro nítida */}
+                <View style={styles.carouselBookCover}>
+                  {book.cover_image ? (
+                    <Image
+                      source={{ uri: getImageUrl(book.cover_image) }}
+                      style={styles.carouselCoverImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.bookImagePlaceholder}>
+                      <Ionicons name="book" size={60} color="#999" />
+                    </View>
+                  )}
+                </View>
+
+                {/* Información del libro */}
+                <View style={styles.carouselInfo}>
+                  <View style={styles.featuredBadge}>
+                    <Ionicons name="star" size={12} color="#fff" style={{ marginRight: 4 }} />
+                    <Text style={styles.featuredBadgeText}>DESTACADO</Text>
                   </View>
-                )}
-              </View>
-
-              <View style={styles.carouselInfo}>
-                <View style={styles.featuredBadge}>
-                  <Ionicons name="star" size={12} color="#fff" style={{ marginRight: 4 }} />
-                  <Text style={styles.featuredBadgeText}>DESTACADO</Text>
-                </View>
-                <Text style={styles.carouselTitle} numberOfLines={2}>{book.title}</Text>
-                <Text style={styles.carouselAuthor} numberOfLines={1}>{book.authors || 'Autor desconocido'}</Text>
-                <View style={styles.carouselFooter}>
-                  <Text style={styles.carouselPrice}>${parseFloat(book.price).toFixed(2)}</Text>
-                  <TouchableOpacity
-                    style={styles.carouselButton} onPress={(e) => {e.stopPropagation();handleAddToCart(book);
-                    }}
-                  >
-                    <Ionicons name="cart" size={16} color="#fff" style={{ marginRight: 6 }} />
-                    <Text style={styles.carouselButtonText}>Agregar</Text>
-                  </TouchableOpacity>
+                  <Text style={styles.carouselTitle} numberOfLines={2}>{book.title}</Text>
+                  <Text style={styles.carouselAuthor} numberOfLines={1}>{book.authors || 'Autor desconocido'}</Text>
+                  <View style={styles.carouselFooter}>
+                    <Text style={styles.carouselPrice}>${parseFloat(book.price).toFixed(2)}</Text>
+                    <TouchableOpacity
+                      style={styles.carouselButton}
+                      onPress={(e) => {
+                        e.stopPropagation(); // Evita que se active el onPress del slide
+                        handleAddToCart(book);
+                      }}
+                    >
+                      <Ionicons name="cart" size={16} color="#fff" style={{ marginRight: 6 }} />
+                      <Text style={styles.carouselButtonText}>Agregar</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
-          </TouchableOpacity>
-        )}
-      />
+            </TouchableOpacity>
+          )}
+        />
 
-      <View style={styles.carouselIndicators}>
-        {featuredBooks.map((_, idx) => (
-          <TouchableOpacity
-            key={idx}
-            style={[styles.indicator, idx === currentSlide ? styles.indicatorActive : null]}
-            onPress={() => handleIndicatorPress(idx)}
-          />
-        ))}
+        {/* Indicadores (puntitos) del carrusel */}
+        <View style={styles.carouselIndicators}>
+          {featuredBooks.map((_, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={[styles.indicator, idx === currentSlide ? styles.indicatorActive : null]}
+              onPress={() => handleIndicatorPress(idx)}
+            />
+          ))}
+        </View>
       </View>
-    </View>
-  );
-}, [featuredBooks, handleAddToCart, API_BASE_URL]); 
+    );
+  }, [featuredBooks, handleAddToCart]);
 
-
-
+  // Renderiza la barra de búsqueda y filtros de categorías
   const renderSearchAndFilters = useCallback(() => (
     <View style={[styles.filtersContainer, darkMode && styles.filtersContainerDark]}>
+      {/* Barra de búsqueda */}
       <View style={[styles.searchContainer, darkMode && styles.searchContainerDark]}>
         <Ionicons name="search" size={20} color={darkMode ? "#999" : "#666"} style={styles.searchIcon} />
         <TextInput
@@ -516,6 +567,7 @@ const renderHeroCarousel = useCallback(() => {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        {/* Botón X para limpiar la búsqueda */}
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
             <Ionicons name="close-circle" size={20} color={darkMode ? "#666" : "#999"} />
@@ -523,6 +575,7 @@ const renderHeroCarousel = useCallback(() => {
         )}
       </View>
 
+      {/* Lista horizontal de categorías */}
       {categories.length > 0 && (
         <FlatList
           horizontal
@@ -554,12 +607,14 @@ const renderHeroCarousel = useCallback(() => {
         />
       )}
 
+      {/* Contador de resultados */}
       <Text style={[styles.resultsText, darkMode && styles.resultsTextDark]}>
         {filteredBooks.length} {filteredBooks.length === 1 ? "libro encontrado" : "libros encontrados"}
       </Text>
     </View>
   ), [searchQuery, selectedCategory, filteredBooks.length, categories, darkMode]);
 
+  // Renderiza cada tarjeta de libro
   const renderBook = useCallback(({ item, index }) => {
     const statusConfig = getStatusConfig(item.stock_quantity);
     const isBookFavorite = isFavorite(item.book_id);
@@ -576,13 +631,14 @@ const renderHeroCarousel = useCallback(() => {
           onPress={() => console.log("Ver detalles del libro:", item.title)}
           style={styles.bookCardInner}
         >
+          {/* Imagen de portada */}
           <View style={[
             styles.bookImageContainer,
             cardSize === 'large' && styles.bookImageContainerLarge
           ]}>
             {item.cover_image ? (
               <Image 
-                source={{ uri: `${API_BASE_URL}/img/${item.cover_image}` }}
+                source={{ uri: getImageUrl(item.cover_image) }}
                 style={styles.bookImage}
                 resizeMode="cover"
               />
@@ -595,11 +651,13 @@ const renderHeroCarousel = useCallback(() => {
             
             <View style={styles.imageGradient} />
 
+            {/* Badge de disponibilidad */}
             <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
               <Ionicons name={statusConfig.icon} size={14} color="#fff" />
               <Text style={styles.statusText}>{statusConfig.text}</Text>
             </View>
 
+            {/* Botón de favoritos */}
             <TouchableOpacity 
               style={[
                 styles.favoriteButton,
@@ -615,6 +673,7 @@ const renderHeroCarousel = useCallback(() => {
             </TouchableOpacity>
           </View>
 
+          {/* Información del libro */}
           <View style={styles.bookInfo}>
             <Text style={[styles.bookTitle, darkMode && styles.bookTitleDark]} numberOfLines={2}>
               {item.title}
@@ -627,6 +686,7 @@ const renderHeroCarousel = useCallback(() => {
               </Text>
             </View>
 
+            {/* Precio y botón de agregar */}
             <View style={styles.bookFooter}>
               <View>
                 <Text style={[styles.priceLabel, darkMode && styles.priceLabelDark]}>Precio</Text>
@@ -654,8 +714,9 @@ const renderHeroCarousel = useCallback(() => {
         </TouchableOpacity>
       </View>
     );
-  }, [darkMode, getStatusConfig, isFavorite, getCardSize, toggleFavorite, handleAddToCart, API_BASE_URL]);
+  }, [darkMode, getStatusConfig, isFavorite, getCardSize, toggleFavorite, handleAddToCart]);
 
+  // Componente que va en el header del FlatList (carrusel + filtros)
   const ListHeaderComponent = useCallback(() => (
     <>
       {renderHeroCarousel()}
@@ -663,6 +724,7 @@ const renderHeroCarousel = useCallback(() => {
     </>
   ), [renderHeroCarousel, renderSearchAndFilters]);
 
+  // Componente que se muestra cuando no hay resultados
   const ListEmptyComponent = useCallback(() => (
     <View style={styles.emptyContainer}>
       <Ionicons name="search-outline" size={64} color={darkMode ? "#555" : "#ccc"} />
@@ -675,6 +737,7 @@ const renderHeroCarousel = useCallback(() => {
     </View>
   ), [darkMode]);
 
+  // Mientras está cargando, mostramos un spinner
   if (loading) {
     return (
       <View style={[styles.loadingContainer, darkMode && styles.loadingContainerDark]}>
@@ -686,6 +749,7 @@ const renderHeroCarousel = useCallback(() => {
     );
   }
 
+  // Vista principal de la pantalla
   return (
     <View style={[styles.container, darkMode && styles.containerDark]}>
       <StatusBar 
@@ -695,6 +759,7 @@ const renderHeroCarousel = useCallback(() => {
       
       {renderStaticHeader()}
       
+      {/* FlatList principal con todos los libros */}
       <Animated.FlatList
         data={filteredBooks}
         keyExtractor={(item) => item.book_id.toString()}
@@ -702,14 +767,16 @@ const renderHeroCarousel = useCallback(() => {
         ListHeaderComponent={ListHeaderComponent}
         ListEmptyComponent={ListEmptyComponent}
         contentContainerStyle={styles.listContent}
-        numColumns={2}
-        key="book-list-2-columns"
+        numColumns={2} // Dos columnas
+        key="book-list-2-columns" // Key fijo para evitar warnings al cambiar numColumns
         columnWrapperStyle={styles.columnWrapper}
+        // Este Animated.event conecta el scroll con la variable scrollY para animar el header
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
+          { useNativeDriver: false } // false porque animamos height que no soporta native driver
         )}
-        scrollEventThrottle={16}
+        scrollEventThrottle={16} // Actualiza cada 16ms (60fps)
+        // RefreshControl es el gesto de "jalar hacia abajo para recargar"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -718,13 +785,15 @@ const renderHeroCarousel = useCallback(() => {
             tintColor="#ffa3c2"
           />
         }
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        updateCellsBatchingPeriod={50}
-        initialNumToRender={6}
-        windowSize={5}
+        // Optimizaciones de rendimiento
+        removeClippedSubviews={true} // Remueve vistas fuera de pantalla del DOM
+        maxToRenderPerBatch={10} // Renderiza 10 elementos por lote
+        updateCellsBatchingPeriod={50} // Espera 50ms entre lotes
+        initialNumToRender={6} // Renderiza 6 elementos inicialmente
+        windowSize={5} // Mantiene 5 "ventanas" de elementos en memoria
       />
       
+      {/* Menú lateral */}
       <DrawerMenu 
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
@@ -733,7 +802,9 @@ const renderHeroCarousel = useCallback(() => {
   );
 }
 
+// Estilos de la pantalla
 const styles = StyleSheet.create({
+  // Contenedor principal
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",
@@ -742,6 +813,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#121212",
   },
   
+  // Pantalla de carga
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -760,6 +832,7 @@ const styles = StyleSheet.create({
     color: "#ccc",
   },
   
+  // Header superior con logo e iconos
   staticHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -774,7 +847,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 3, // Sombra en Android
   },
   staticHeaderDark: {
     backgroundColor: "rgba(26, 26, 26, 0.98)",
@@ -786,6 +859,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   
+  // Contenedor de iconos (carrito, perfil, menú)
   headerIcons: {
     flexDirection: "row",
     alignItems: "center",
@@ -796,6 +870,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   
+  // Badge rojo del carrito con la cantidad
   cartBadge: {
     position: "absolute",
     top: 4,
@@ -813,26 +888,27 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
+  // Estilos del carrusel de libros destacados
   carouselContainer: {
     height: 300,
     marginBottom: 16,
     marginTop: 16,
   },
   carouselSlide: {
-    width: SCREEN_WIDTH,
+    width: SCREEN_WIDTH, // Cada slide ocupa todo el ancho
     height: 400,
     position: 'relative',
   },
   carouselImage: {
     width: '100%',
     height: '100%',
-    position: 'absolute',
+    position: 'absolute', // Fondo absoluto
   },
   carouselGradient: {
     position: 'absolute',
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)', // Capa oscura encima del fondo
   },
   carouselContent: {
     flex: 1,
@@ -882,7 +958,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 6,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)', // Sombra en el texto para legibilidad
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
@@ -919,6 +995,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
+  // Indicadores (puntitos) del carrusel
   carouselIndicators: {
     position: 'absolute',
     bottom: 12,
@@ -935,10 +1012,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
   indicatorActive: {
-    width: 24,
+    width: 24, // El activo es más ancho
     backgroundColor: '#ffa3c2',
   },
   
+  // Contenedor de búsqueda y filtros
   filtersContainer: {
     backgroundColor: "#fff",
     paddingBottom: 16,
@@ -950,6 +1028,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#333",
   },
   
+  // Barra de búsqueda
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -981,6 +1060,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   
+  // Lista horizontal de categorías
   categoriesContainer: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -998,7 +1078,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   categoryChipActive: {
-    backgroundColor: "#ffa3c2",
+    backgroundColor: "#ffa3c2", // Rosa cuando está seleccionada
   },
   categoryChipDark: {
     backgroundColor: "rgba(42, 42, 42, 0.8)",
@@ -1019,6 +1099,7 @@ const styles = StyleSheet.create({
     color: "#ccc",
   },
   
+  // Texto de resultados encontrados
   resultsText: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -1029,17 +1110,19 @@ const styles = StyleSheet.create({
     color: "#999",
   },
   
+  // Estilos del FlatList
   listContent: {
     paddingBottom: 16,
     paddingTop: 4,
   },
   columnWrapper: {
     paddingHorizontal: 12,
-    justifyContent: 'space-between',
+    justifyContent: 'space-between', // Espacio uniforme entre las 2 columnas
   },
   
+  // Tarjeta de libro
   bookCard: {
-    width: (SCREEN_WIDTH - 48) / 2,
+    width: (SCREEN_WIDTH - 48) / 2, // Ancho calculado para 2 columnas con márgenes
     backgroundColor: "#fff",
     borderRadius: 20,
     marginBottom: 20,
@@ -1061,6 +1144,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   
+  // Contenedor de la imagen de portada
   bookImageContainer: {
     position: "relative",
     width: "100%",
@@ -1079,6 +1163,7 @@ const styles = StyleSheet.create({
     height: '30%',
     backgroundColor: 'transparent',
   },
+  // Placeholder cuando no hay imagen
   bookImagePlaceholder: {
     width: "100%",
     height: "100%",
@@ -1096,6 +1181,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   
+  // Badge de disponibilidad (esquina superior derecha)
   statusBadge: {
     position: "absolute",
     top: 10,
@@ -1119,6 +1205,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   
+  // Botón de favoritos (corazón en esquina superior izquierda)
   favoriteButton: {
     position: "absolute",
     top: 10,
@@ -1136,9 +1223,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   favoriteButtonActive: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    backgroundColor: "rgba(255, 255, 255, 0.95)", // Fondo blanco cuando está activo
   },
   
+  // Información del libro (título, autor, precio)
   bookInfo: {
     padding: 16,
     flex: 1,
@@ -1155,6 +1243,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   
+  // Fila del autor con icono
   authorRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1165,12 +1254,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888",
     flex: 1,
-    fontStyle: 'italic',
+    fontStyle: 'italic', // Cursiva para darle estilo de librería
   },
   bookAuthorDark: {
     color: "#aaa",
   },
   
+  // Línea divisora entre autor y precio
   divider: {
     height: 1,
     backgroundColor: "rgba(0, 0, 0, 0.06)",
@@ -1180,6 +1270,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.1)",
   },
   
+  // Footer de la tarjeta con precio y botón
   bookFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1208,6 +1299,7 @@ const styles = StyleSheet.create({
     color: "#4CAF50",
   },
   
+  // Botón circular de agregar al carrito
   addButton: {
     backgroundColor: "#ffa3c2",
     width: 44,
@@ -1230,6 +1322,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
   },
   
+  // Vista cuando no hay resultados
   emptyContainer: {
     flex: 1,
     justifyContent: "center",

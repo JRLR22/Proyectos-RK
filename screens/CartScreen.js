@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { getImageUrl } from '../config/api';
 import { getColors } from '../constants/colors';
 import { useCart } from "../contexts/CartContext";
 import { useTheme } from '../contexts/ThemeContext';
@@ -28,14 +29,6 @@ export default function CartScreen() {
     clearCart,
     getCartTotal,
   } = useCart();
-
-  const API_BASE_URL = "http://localhost:8000";
-
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return null;
-    if (imagePath.startsWith('http')) return imagePath;
-    return `${API_BASE_URL}/img/${imagePath}`;
-  };
 
   const handleRemoveItem = (bookId, title) => {
     if (Platform.OS === 'web') {

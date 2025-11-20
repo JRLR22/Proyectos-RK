@@ -13,9 +13,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { API_BASE_URL } from '../config/api';
 import { getColors } from '../constants/colors';
 import { useCart } from '../contexts/CartContext';
 import { useTheme } from '../contexts/ThemeContext';
+
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -34,7 +36,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const { reloadUser } = useCart();
 
-  const API_URL = "http://localhost:8000/api";
+
 
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -55,11 +57,11 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+    const response = await fetch(`${API_BASE_URL}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
 
       const data = await response.json();
 
@@ -108,7 +110,7 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { API_ENDPOINTS, apiFetch } from '../config/api';
 import { getColors } from '../constants/colors';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -23,22 +24,20 @@ export default function CategoriesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const API_BASE_URL = "http://localhost:8000"; 
 
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/categories`);
-      const data = await response.json();
-      console.log("📂 Categorías obtenidas:", data.length);
-      setCategories(data);
-      setLoading(false);
-      setRefreshing(false);
-    } catch (error) {
-      console.error("❌ Error al obtener categorías:", error);
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+const fetchCategories = async () => {
+  try {
+    const data = await apiFetch(API_ENDPOINTS.categories);
+    console.log("📂 Categorías obtenidas:", data.length);
+    setCategories(data);
+    setLoading(false);
+    setRefreshing(false);
+  } catch (error) {
+    console.error("❌ Error al obtener categorías:", error);
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
 
   useEffect(() => {
     fetchCategories();

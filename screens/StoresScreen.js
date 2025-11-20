@@ -1,18 +1,18 @@
-// screens/StoresScreen.js - VERSIÓN MEJORADA CON ZOOM AUTOMÁTICO Y ESRI 3D
+// ZOOM AUTOMÁTICO Y ESRI 3D
 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from 'expo-router';
 import { useRef, useState } from "react";
 import {
-    Linking,
-    Modal,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Linking,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { WebView } from 'react-native-webview';
 import { getColors } from '../constants/colors';
@@ -30,31 +30,31 @@ export default function StoresScreen() {
   const stores = [
     {
       id: 1,
-      name: "Gonvill Centro",
-      address: "Av. Álvaro Obregón 123, Centro, Culiacán",
-      phone: "+526671234567",
-      latitude: 24.8091,
-      longitude: -107.3940
+      name: "Gonvill – Culiacán (Sinaloa)",
+      address: "Av. Álvaro Obregón 1686, Col. Gabriel Leyva.",
+      phone: "(667) 712-3109",
+      latitude: 24.8166,
+      longitude: -107.3957
     },
     {
       id: 2,
-      name: "Gonvill Norte",
-      address: "Blvd. Emiliano Zapata 456, Culiacán",
-      phone: "+526671234568",
-      latitude: 24.8291,
-      longitude: -107.3840
+      name: "Gonvill – Torreón (Coahuila)",
+      address: "Centro Comercial Plaza Cuatro Caminos, Blvd. Independencia 1300 Ote, Col. Navarro",
+      phone: "(871) 722-6077",
+      latitude: 25.5590,
+      longitude: -103.4331
     },
     {
       id: 3,
-      name: "Gonvill Sur",
-      address: "Av. Universidad 789, Culiacán",
-      phone: "+526671234569",
-      latitude: 24.7891,
-      longitude: -107.4040
+      name: "Gonvill – Aguascalientes (Aguascalientes)",
+      address: "Centro Comercial Altaria, Blvd. Zacatecas Norte 851, local 1032 y 1033, Troje Alonso",
+      phone: "449 912-15-23",
+      latitude: 21.9244,
+      longitude: -102.2896
     }
   ];
 
-  // 🗺️ Mapas mejorados - SOLO OSM, ESRI Satélite y ESRI 3D
+  // Mapas OSM, ESRI Satélite y ESRI 3D
   const mapProviders = [
     {
       id: 'osm',
@@ -63,7 +63,7 @@ export default function StoresScreen() {
       icon: 'map-outline',
       type: '2d',
       light: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      dark: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       attribution: '© OpenStreetMap'
     },
     {
@@ -127,7 +127,7 @@ export default function StoresScreen() {
     Linking.openURL(url);
   };
 
-  // 🎯 Función para hacer zoom desde las tarjetas de tiendas
+  // Función para hacer zoom desde las tarjetas de tiendas
   const handleZoomToStore = (store) => {
     setSelectedStore(store);
     
@@ -253,129 +253,173 @@ export default function StoresScreen() {
   };
 
   // HTML para mapa 3D (ESRI ArcGIS)
-  const generate3DMapHTML = () => {
-    return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
-      <script src="https://js.arcgis.com/4.28/"></script>
-      <style>
-        html, body, #viewDiv { 
-          padding: 0; 
-          margin: 0; 
-          height: 100%; 
-          width: 100%; 
-        }
-      </style>
-    </head>
-    <body>
-      <div id="viewDiv"></div>
-      <script>
-        require([
-          "esri/Map",
-          "esri/views/SceneView",
-          "esri/Graphic",
-          "esri/layers/GraphicsLayer"
-        ], function(Map, SceneView, Graphic, GraphicsLayer) {
-          
-          const graphicsLayer = new GraphicsLayer();
-          
-          const map = new Map({
-            basemap: "satellite",
-            ground: "world-elevation",
-            layers: [graphicsLayer]
-          });
-          
-          const view = new SceneView({
-            container: "viewDiv",
-            map: map,
-            camera: {
-              position: {
-                longitude: -107.3940,
-                latitude: 24.8091,
-                z: 2000
-              },
-              tilt: 60,
-              heading: 0
-            }
-          });
 
-          const stores = ${JSON.stringify(stores)};
+const generate3DMapHTML = () => {
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.28/"></script>
 
-          stores.forEach(store => {
-            const point = {
-              type: "point",
-              longitude: store.longitude,
-              latitude: store.latitude,
-              z: 50
-            };
+    <style>
+      html, body, #viewDiv {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
 
-            const markerSymbol = {
-              type: "simple-marker",
-              color: [255, 163, 194, 0.9],
-              size: "16px",
-              outline: {
-                color: [255, 255, 255],
-                width: 3
-              }
-            };
+      .esri-popup__header { 
+        background: #ffa3c2 !important;
+      }
+      .esri-popup__header-title {
+        color: white !important;
+        font-weight: bold;
+      }
+    </style>
+  </head>
 
-            const pointGraphic = new Graphic({
-              geometry: point,
-              symbol: markerSymbol,
-              attributes: store,
-              popupTemplate: {
-                title: "📚 " + store.name,
-                content: store.address + "<br>📞 " + store.phone
-              }
-            });
+  <body>
+    <div id="viewDiv"></div>
 
-            graphicsLayer.add(pointGraphic);
-          });
+    <script>
+      require([
+        "esri/Map",
+        "esri/views/SceneView",
+        "esri/Graphic",
+        "esri/layers/GraphicsLayer",
+        "esri/symbols/PointSymbol3D",
+        "esri/symbols/ObjectSymbol3DLayer",
+        "esri/symbols/TextSymbol",
+        "esri/PopupTemplate"
+      ],
+      function(
+        Map, SceneView, Graphic, GraphicsLayer,
+        PointSymbol3D, ObjectSymbol3DLayer,
+        TextSymbol, PopupTemplate
+      ) {
 
-          view.on("click", function(event) {
-            view.hitTest(event).then(function(response) {
-              if (response.results.length) {
-                const graphic = response.results[0].graphic;
-                if (graphic.attributes) {
-                  window.ReactNativeWebView.postMessage(
-                    JSON.stringify(graphic.attributes)
-                  );
-                  
-                  view.goTo({
-                    target: graphic.geometry,
-                    zoom: 17,
-                    tilt: 65,
-                    heading: 30
-                  }, {
-                    duration: 2000
-                  });
-                }
-              }
-            });
-          });
+        const graphicsLayer = new GraphicsLayer();
+        const labelsLayer = new GraphicsLayer();
 
-          window.zoomToStore = function(storeId) {
-            const store = stores.find(s => s.id === storeId);
-            if (store) {
-              view.goTo({
-                center: [store.longitude, store.latitude],
-                zoom: 17,
-                tilt: 65,
-                heading: 30
-              }, {
-                duration: 2000
-              });
-            }
-          };
+        const map = new Map({
+          basemap: "satellite",
+          ground: "world-elevation",
+          layers: [graphicsLayer, labelsLayer]
         });
-      </script>
-    </body>
-    </html>
+
+        const view = new SceneView({
+          container: "viewDiv",
+          map: map,
+
+          camera: {
+            position: { latitude: 24.8091, longitude: -107.3940, z: 2000 },
+            tilt: 55
+          },
+
+          // ⚡ Optimizado para celular
+          qualityProfile: "medium",
+          environment: {
+            lighting: { directShadowsEnabled: false }, 
+            atmosphereEnabled: true,
+            starsEnabled: false
+          },
+
+          constraints: {
+            tilt: { max: 70 }
+          }
+        });
+
+        const stores = ${JSON.stringify(stores)};
+
+        stores.forEach(store => {
+
+          const pointGraphic = new Graphic({
+            geometry: {
+              type: "point",
+              latitude: store.latitude,
+              longitude: store.longitude
+            },
+            symbol: new PointSymbol3D({
+              symbolLayers: [
+                new ObjectSymbol3DLayer({
+                  resource: { primitive: "cone" },
+                  material: { color: [255, 163, 194] },
+                  height: 40,
+                  width: 20
+                })
+              ]
+            }),
+            attributes: store,
+              popupTemplate: new PopupTemplate({
+                title: "📚 " + store.name,
+                content:
+                  '<b>Dirección:</b> ' + store.address +
+                  '<br><a href="tel:' + store.phone +
+                  '" style="color:#ffa3c2;font-weight:bold;">📞 Llamar</a>'
+              })
+          });
+
+          graphicsLayer.add(pointGraphic);
+
+          // Etiqueta flotante
+          labelsLayer.add(
+            new Graphic({
+              geometry: {
+                type: "point",
+                latitude: store.latitude,
+                longitude: store.longitude,
+                z: 80
+              },
+              symbol: new TextSymbol({
+                text: store.name.replace("Gonvill ", ""),
+                color: "white",
+                haloColor: "#ffa3c2",
+                haloSize: 2,
+                font: { size: 10, weight: "bold" }
+              })
+            })
+          );
+
+        });
+
+        // Clicks
+        view.on("click", (event) => {
+          view.hitTest(event).then(res => {
+            const g = res.results[0]?.graphic;
+            if(!g || !g.attributes) return;
+
+            window.ReactNativeWebView.postMessage(JSON.stringify(g.attributes));
+
+            view.goTo(
+              { target: g.geometry, tilt: 60, zoom: 17 },
+              { duration: 1200 }
+            );
+          });
+        });
+
+        // Zoom desde React Native
+        window.zoomToStore = (id) => {
+          const graphic = graphicsLayer.graphics.find(g => g.attributes.id === id);
+          if (!graphic) return;
+
+          view.popup.open({ features: [graphic], location: graphic.geometry });
+
+          view.goTo(
+            { target: graphic.geometry, tilt: 60, zoom: 17 },
+            { duration: 1200 }
+          );
+        };
+
+      });
+    </script>
+  </body>
+  </html>
   `;
-  };
+};
+
 
   const currentMapHTML = currentMapProvider?.type === '3d' ? generate3DMapHTML() : generate2DMapHTML();
 
