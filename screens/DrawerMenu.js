@@ -37,7 +37,7 @@ export default function DrawerMenu({ visible, onClose }) {
       console.error('Error cargando usuario:', error);
     }
   };
-  //Nuevo logout llamando a AuthContext
+  
   const { logout } = useAuth();
 
   const handleLogout = () => {
@@ -47,6 +47,7 @@ export default function DrawerMenu({ visible, onClose }) {
   const menuItems = [
     { icon: "home-outline", label: "Inicio", route: "/" },
     { icon: "grid-outline", label: "Categorías", route: "/categories" },
+    { icon: "stats-chart-outline", label: "Estadísticas", route: "/stats" },
     { icon: "cart-outline", label: "Mis Pedidos", route: "/orders" },
     { icon: "heart-outline", label: "Favoritos", route: "/favorites" },
     { icon: "location-outline", label: "Ubicaciones", route: "/stores" },

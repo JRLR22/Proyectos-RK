@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -13,12 +14,13 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View
 } from "react-native";
+import ConfettiCannon from 'react-native-confetti-cannon';
 import 'react-native-gesture-handler';
 import LoadingAnimation from '../components/LoadingAnimation';
+import { MorphingSearchBar } from '../components/MorphingSearchBar';
 import { API_ENDPOINTS, apiFetch, getImageUrl } from '../config/api';
 import { useCart } from '../contexts/CartContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -46,6 +48,9 @@ export default function HomeScreen() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Si el usuario tiene sesión activa
   const [favorites, setFavorites] = useState([]); // Lista de favoritos del usuario
   const [favKey, setFavKey] = useState(null); // Clave para guardar favoritos en AsyncStorage
+  const [showConfetti, setShowConfetti] = useState(false);// Estados para el confetti
+  const confettiRef = useRef(null);//
+
 
   // Referencias y valores para animaciones y el carrusel
   const scrollY = useRef(new Animated.Value(0)).current; // Para animar el header al hacer scroll
@@ -346,16 +351,28 @@ export default function HomeScreen() {
   }, []);
 
   // Agrega un libro al carrito
-  const handleAddToCart = useCallback((item) => {
-    if (item.stock_quantity > 0) {
-      addToCart(item);
-      if (Platform.OS === 'web') {
-        alert(`"${item.title}" agregado al carrito`);
-      } else {
-        Alert.alert("Agregado", `"${item.title}" se agregó al carrito`);
-      }
+const handleAddToCart = useCallback((item) => {
+  if (item.stock_quantity > 0) {
+    addToCart(item);
+    
+    // Activa el confetti
+    setShowConfetti(true);
+    
+    // Vibración triple
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 100);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 200);
+    
+    if (Platform.OS === 'web') {
+      alert(`"${item.title}" agregado al carrito 🎉`);
+    } else {
+      Alert.alert("¡Agregado! 🎉", `"${item.title}" está en tu carrito`);
     }
-  }, [addToCart]);
+    
+    // Oculta confetti después de 2.5 segundos
+    setTimeout(() => setShowConfetti(false), 2500);
+  }
+}, [addToCart]);
 
   // Renderiza el header superior con logo e iconos
   const renderStaticHeader = useCallback(() => (
@@ -556,27 +573,8 @@ export default function HomeScreen() {
   }, [featuredBooks, handleAddToCart]);
 
   // Renderiza la barra de búsqueda y filtros de categorías
-  const renderSearchAndFilters = useCallback(() => (
+  const renderCategoryFilters = useCallback(() => (
     <View style={[styles.filtersContainer, darkMode && styles.filtersContainerDark]}>
-      {/* Barra de búsqueda */}
-      <View style={[styles.searchContainer, darkMode && styles.searchContainerDark]}>
-        <Ionicons name="search" size={20} color={darkMode ? "#999" : "#666"} style={styles.searchIcon} />
-        <TextInput
-          style={[styles.searchInput, darkMode && styles.searchInputDark]}
-          placeholder="Buscar libros o autores..."
-          placeholderTextColor={darkMode ? "#666" : "#999"}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {/* Botón X para limpiar la búsqueda */}
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-circle" size={20} color={darkMode ? "#666" : "#999"} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Lista horizontal de categorías */}
       {categories.length > 0 && (
         <FlatList
           horizontal
@@ -607,13 +605,8 @@ export default function HomeScreen() {
           )}
         />
       )}
-
-      {/* Contador de resultados */}
-      <Text style={[styles.resultsText, darkMode && styles.resultsTextDark]}>
-        {filteredBooks.length} {filteredBooks.length === 1 ? "libro encontrado" : "libros encontrados"}
-      </Text>
     </View>
-  ), [searchQuery, selectedCategory, filteredBooks.length, categories, darkMode]);
+  ), [selectedCategory, categories, darkMode]);
 
   // Renderiza cada tarjeta de libro
   const renderBook = useCallback(({ item, index }) => {
@@ -718,12 +711,12 @@ export default function HomeScreen() {
   }, [darkMode, getStatusConfig, isFavorite, getCardSize, toggleFavorite, handleAddToCart]);
 
   // Componente que va en el header del FlatList (carrusel + filtros)
-  const ListHeaderComponent = useCallback(() => (
+  const ListHeaderComponent = useMemo(() => (
     <>
       {renderHeroCarousel()}
-      {renderSearchAndFilters()}
+      {renderCategoryFilters()}
     </>
-  ), [renderHeroCarousel, renderSearchAndFilters]);
+  ), [renderHeroCarousel, renderCategoryFilters]);
 
   // Componente que se muestra cuando no hay resultados
   const ListEmptyComponent = useCallback(() => (
@@ -752,6 +745,16 @@ export default function HomeScreen() {
       />
       
       {renderStaticHeader()}
+
+      <View style={[styles.fixedSearchContainer, darkMode && styles.fixedSearchContainerDark]}>
+        <MorphingSearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          onClear={() => setSearchQuery("")}
+          darkMode={darkMode}
+        />
+      </View>
+
       
       {/* FlatList principal con todos los libros */}
       <Animated.FlatList
@@ -792,6 +795,21 @@ export default function HomeScreen() {
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
       />
+      {/* Confetizaso */}
+       {showConfetti && (
+        <ConfettiCannon
+          ref={confettiRef}
+          count={60}
+          origin={{ x: SCREEN_WIDTH / 2, y: -10 }}
+          autoStart={true}
+          fadeOut={true}
+          fallSpeed={2500}
+          colors={['#ffa3c2', '#ff8fb3', '#4CAF50', '#FFD700', '#FF5722']}
+          explosionSpeed={350}
+        />
+      )}
+
+
     </View>
   );
 }
@@ -885,8 +903,8 @@ const styles = StyleSheet.create({
   // Estilos del carrusel de libros destacados
   carouselContainer: {
     height: 300,
-    marginBottom: 16,
-    marginTop: 16,
+    marginBottom: 10,
+    marginTop: 10,
   },
   carouselSlide: {
     width: SCREEN_WIDTH, // Cada slide ocupa todo el ancho
