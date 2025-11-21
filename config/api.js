@@ -10,13 +10,13 @@
 
 const getDevelopmentUrl = () => {
 
-   return 'http://192.168.100.2:8000';  // Reemplaza con tu IP
+  // return 'http://192.168.100.2:8000';  // Reemplaza con tu IP
 
   // Android Emulator, cambia a:
   // return 'http://10.0.2.2:8000'; 
 
   // iOS Simulator y web pueden usar localhost
-  // return 'http://localhost:8000';
+   return 'http://localhost:8000';
 };
 
 const API_URLS = {

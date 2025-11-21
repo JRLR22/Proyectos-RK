@@ -3,7 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
@@ -19,6 +18,7 @@ import {
   View
 } from "react-native";
 import 'react-native-gesture-handler';
+import LoadingAnimation from '../components/LoadingAnimation';
 import { API_ENDPOINTS, apiFetch, getImageUrl } from '../config/api';
 import { useCart } from '../contexts/CartContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -33,12 +33,13 @@ export default function HomeScreen() {
   const { addToCart, getCartCount } = useCart();
   const { darkMode } = useTheme();
 
+
   // Estados para manejar los datos y la interfaz
   const [drawerVisible, setDrawerVisible] = useState(false); // Para abrir/cerrar el menú lateral
   const [books, setBooks] = useState([]); // Todos los libros que vienen de la API
   const [filteredBooks, setFilteredBooks] = useState([]); // Libros después de aplicar filtros
   const [categories, setCategories] = useState(["Todos"]); // Categorías disponibles
-  const [loading, setLoading] = useState(true); // Para mostrar el spinner de carga
+  const [loading, setLoading] = useState(true); // Para mostrar la carga
   const [refreshing, setRefreshing] = useState(false); // Para el gesto de "pull to refresh"
   const [searchQuery, setSearchQuery] = useState(""); // Lo que el usuario escribe en la búsqueda
   const [selectedCategory, setSelectedCategory] = useState("Todos"); // Categoría seleccionada
@@ -482,7 +483,7 @@ export default function HomeScreen() {
               key={book.book_id}
               style={styles.carouselSlide}
               activeOpacity={0.95}
-              onPress={() => console.log('Ver libro:', book.title)}
+              onPress={() => router.push(`/book/${book.book_id}`)}
             >
               {/* Imagen de fondo borrosa */}
               {book.cover_image ? (
@@ -628,7 +629,7 @@ export default function HomeScreen() {
       ]}>
         <TouchableOpacity 
           activeOpacity={0.8}
-          onPress={() => console.log("Ver detalles del libro:", item.title)}
+          onPress={() => router.push(`/book/${item.book_id}`)}
           style={styles.bookCardInner}
         >
           {/* Imagen de portada */}
@@ -737,16 +738,9 @@ export default function HomeScreen() {
     </View>
   ), [darkMode]);
 
-  // Mientras está cargando, mostramos un spinner
+  // Mientras está cargando
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, darkMode && styles.loadingContainerDark]}>
-        <ActivityIndicator size="large" color="#ffa3c2" />
-        <Text style={[styles.loadingText, darkMode && styles.loadingTextDark]}>
-          Cargando libros...
-        </Text>
-      </View>
-    );
+    return <LoadingAnimation message="Cargando libros..." />;
   }
 
   // Vista principal de la pantalla
