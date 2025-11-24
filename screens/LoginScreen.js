@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useState } from "react";
 import {
@@ -13,15 +12,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { API_BASE_URL } from '../config/api';
 import { getColors } from '../constants/colors';
-import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-
 
 export default function LoginScreen() {
   const router = useRouter();
   const { darkMode } = useTheme();
+  const { login, register } = useAuth(); 
   const colors = getColors(darkMode);
   
   const [isLogin, setIsLogin] = useState(true);
@@ -34,9 +32,6 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { reloadUser } = useCart();
-
-
 
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,33 +51,15 @@ export default function LoginScreen() {
 
     setLoading(true);
 
-    try {
-    const response = await fetch(`${API_BASE_URL}/api/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
+    const result = await login(email, password);
 
-      const data = await response.json();
+    setLoading(false);
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Error en login');
-      }
-
-      await AsyncStorage.setItem('userToken', data.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(data.user));
-
-      //Recargar carrito
-      await reloadUser();
-
-      setLoading(false);
+    if (result.success) {
       Alert.alert("¡Éxito!", "Has iniciado sesión correctamente");
-      router.replace('/');
-
-    } catch (error) {
-      setLoading(false);
-      Alert.alert("Error", error.message || "No se pudo iniciar sesión");
-      console.error("Error en login:", error);
+      router.push('/');
+    } else {
+      Alert.alert("Error", result.error || "No se pudo iniciar sesión");
     }
   };
 
@@ -109,36 +86,21 @@ export default function LoginScreen() {
 
     setLoading(true);
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email, 
-          password,
-          first_name: firstName,
-          last_name: lastName,
-          phone: phone || null,
-        })
-      });
+    const result = await register({
+      email,
+      password,
+      first_name: firstName,
+      last_name: lastName,
+      phone: phone || null,
+    }); 
 
-      const data = await response.json();
+    setLoading(false);
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Error en registro');
-      }
-
-      await AsyncStorage.setItem('userToken', data.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(data.user));
-
-      setLoading(false);
+    if (result.success) {
       Alert.alert("¡Éxito!", "Cuenta creada correctamente");
-      router.replace('/');
-
-    } catch (error) {
-      setLoading(false);
-      Alert.alert("Error", error.message || "No se pudo crear la cuenta");
-      console.error("Error en registro:", error);
+      router.push('/');
+    } else {
+      Alert.alert("Error", result.error || "No se pudo crear la cuenta");
     }
   };
 

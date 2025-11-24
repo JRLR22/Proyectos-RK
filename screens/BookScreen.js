@@ -2,24 +2,27 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-    Alert,
-    Dimensions,
-    Image,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Animated,
+  Dimensions,
+  Image,
+  PanResponder,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import LoadingAnimation from '../components/LoadingAnimation';
 import { API_BASE_URL, getImageUrl } from '../config/api';
 import { useCart } from '../contexts/CartContext';
 import { useTheme } from '../contexts/ThemeContext';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -35,6 +38,22 @@ export default function BookScreen() {
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiRef = useRef(null);
+
+  //  Animaciones
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const heartScale = useRef(new Animated.Value(1)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+
+  //  Animaciones 3D para la portada
+  const rotateX = useRef(new Animated.Value(0)).current;
+  const rotateY = useRef(new Animated.Value(0)).current;
+  const coverScale = useRef(new Animated.Value(1)).current;
+  const shine = useRef(new Animated.Value(0)).current;
+  const bookOpen = useRef(new Animated.Value(0)).current; // Nueva Animación de apertura
 
   useEffect(() => {
     if (bookId) {
@@ -46,12 +65,154 @@ export default function BookScreen() {
     }
   }, [bookId]);
 
+  //  Animación de entrada cuando carga el libro
+  useEffect(() => {
+    if (book) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [book]);
+
+  //  PanResponder para la portada del libro
+
+const coverPanResponder = useRef(
+  PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    
+    onPanResponderGrant: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      updateCoverRotation(locationX, locationY);
+      animateBookOpen(); // Abre el libro al tocar
+    },
+    
+    onPanResponderMove: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      updateCoverRotation(locationX, locationY);
+    },
+    
+    onPanResponderRelease: () => {
+      resetCoverRotation();
+      animateBookClose(); //  Cierra el libro al soltar
+    },
+    
+    onPanResponderTerminate: () => {
+      resetCoverRotation();
+      animateBookClose(); // Cierra el libro si se cancela
+    },
+  })
+).current;
+
+  const updateCoverRotation = (x, y) => {
+    const width = SCREEN_WIDTH * 0.6;
+    const height = 350;
+    
+    const normalizedX = ((x / width) - 0.5) * 2;
+    const normalizedY = ((y / height) - 0.5) * 2;
+
+    Animated.parallel([
+      Animated.spring(rotateX, {
+        toValue: -normalizedY * 10,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 50,
+      }),
+      Animated.spring(rotateY, {
+        toValue: normalizedX * 10,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 50,
+      }),
+      Animated.spring(coverScale, {
+        toValue: 1.05,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 50,
+      }),
+      Animated.timing(shine, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const resetCoverRotation = () => {
+    Animated.parallel([
+      Animated.spring(rotateX, {
+        toValue: 0,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 50,
+      }),
+      Animated.spring(rotateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 50,
+      }),
+      Animated.spring(coverScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 50,
+      }),
+      Animated.timing(shine, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  // Animar apertura del libro
+const animateBookOpen = () => {
+  Animated.spring(bookOpen, {
+    toValue: 1,
+    friction: 8,
+    tension: 40,
+    useNativeDriver: true,
+  }).start();
+};
+
+// Cerrar el libro
+const animateBookClose = () => {
+  Animated.spring(bookOpen, {
+    toValue: 0,
+    friction: 8,
+    tension: 40,
+    useNativeDriver: true,
+  }).start();
+};
+
+  // Efecto parallax en la imagen al hacer scroll
+  const imageTranslateY = scrollY.interpolate({
+    inputRange: [0, 300],
+    outputRange: [0, -100],
+    extrapolate: 'clamp',
+  });
+
+  const imageScale = scrollY.interpolate({
+    inputRange: [0, 300],
+    outputRange: [1, 1.2],
+    extrapolate: 'clamp',
+  });
 
 const fetchBookDetail = async () => {
   try {
     console.log('🔍 Obteniendo libro con ID:', bookId);
     
-    // Obtenemos TODOS los libros
     const response = await fetch(`${API_BASE_URL}/api/books`);
     
     if (!response.ok) {
@@ -61,7 +222,6 @@ const fetchBookDetail = async () => {
     const allBooks = await response.json();
     console.log('📚 Total de libros:', allBooks.length);
     
-    // Buscamos el libro específico por ID
     const foundBook = allBooks.find(book => book.book_id === parseInt(bookId));
     
     if (!foundBook) {
@@ -104,6 +264,25 @@ const fetchBookDetail = async () => {
         return;
       }
 
+      //  Animación del corazón
+      Animated.sequence([
+        Animated.spring(heartScale, {
+          toValue: 1.3,
+          friction: 3,
+          useNativeDriver: true,
+        }),
+        Animated.spring(heartScale, {
+          toValue: 1,
+          friction: 3,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      //  Vibración
+      if (Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+
       const user = JSON.parse(userData);
       const favKey = `favorites_${user.user_id}`;
       const favData = await AsyncStorage.getItem(favKey);
@@ -132,25 +311,52 @@ const fetchBookDetail = async () => {
     }
   };
 
-  const handleAddToCart = () => {
-    if (book.stock_quantity === 0) {
-      Alert.alert("Sin stock", "Este libro no está disponible");
-      return;
-    }
+const handleAddToCart = () => {
+  if (book.stock_quantity === 0) {
+    Alert.alert("Sin stock", "Este libro no está disponible");
+    return;
+  }
 
-    for (let i = 0; i < quantity; i++) {
-      addToCart(book);
-    }
+  // Animación del botón
+  Animated.sequence([
+    Animated.spring(buttonScale, {
+      toValue: 0.9,
+      friction: 3,
+      useNativeDriver: true,
+    }),
+    Animated.spring(buttonScale, {
+      toValue: 1,
+      friction: 3,
+      useNativeDriver: true,
+    }),
+  ]).start();
 
-    if (Platform.OS === 'web') {
-      alert(`${quantity} ${quantity === 1 ? 'libro agregado' : 'libros agregados'} al carrito`);
-    } else {
-      Alert.alert(
-        "Agregado",
-        `${quantity} ${quantity === 1 ? 'libro' : 'libros'} ${quantity === 1 ? 'agregado' : 'agregados'} al carrito`
-      );
-    }
-  };
+  //  ACTIVAR CONFETTI
+  setShowConfetti(true);
+
+  // Vibración de éxito
+  if (Platform.OS !== 'web') {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }
+
+  // Agregar al carrito
+  for (let i = 0; i < quantity; i++) {
+    addToCart(book);
+  }
+
+  // Mensaje de éxito
+  if (Platform.OS === 'web') {
+    alert(`${quantity} ${quantity === 1 ? 'libro agregado' : 'libros agregados'} al carrito 🎉`);
+  } else {
+    Alert.alert(
+      "¡Agregado! 🎉",
+      `${quantity} ${quantity === 1 ? 'libro' : 'libros'} ${quantity === 1 ? 'agregado' : 'agregados'} al carrito`
+    );
+  }
+
+  // OCULTAR CONFETTI después de 2.5 segundos
+  setTimeout(() => setShowConfetti(false), 2500);
+};
 
   const getStatusConfig = (stock) => {
     if (stock === 0) {
@@ -173,7 +379,7 @@ const fetchBookDetail = async () => {
       <View style={[styles.errorContainer, darkMode && styles.errorContainerDark]}>
         <Ionicons name="alert-circle" size={64} color="#999" />
         <Text style={styles.errorText}>Libro no encontrado</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/')}>
           <Text style={styles.backButtonText}>Volver</Text>
         </TouchableOpacity>
       </View>
@@ -182,43 +388,240 @@ const fetchBookDetail = async () => {
 
   const statusConfig = getStatusConfig(book.stock_quantity);
 
+  // Estilos animados para la portada 3D
+  const coverAnimatedStyle = {
+    transform: [
+      { perspective: 800 },
+      { 
+        rotateX: rotateX.interpolate({
+          inputRange: [-10, 10],
+          outputRange: ['-10deg', '10deg']
+        })
+      },
+      { 
+        rotateY: rotateY.interpolate({
+          inputRange: [-10, 10],
+          outputRange: ['-10deg', '10deg']
+        })
+      },
+      { scale: coverScale },
+    ],
+  };
+
   return (
     <View style={[styles.container, darkMode && styles.containerDark]}>
       <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
 
       {/* Header flotante */}
-      <View style={[styles.header, darkMode && styles.headerDark]}>
+      <Animated.View style={[styles.header, darkMode && styles.headerDark]}>
         <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={darkMode ? "#000000ff" : "#000"} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.headerButton} onPress={toggleFavorite}>
-          <Ionicons 
-            name={isFavorite ? "heart" : "heart-outline"} 
-            size={24} 
-            color={isFavorite ? "#F44336" : (darkMode ? "#000000ff" : "#000")} 
-          />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Imagen del libro */}
-        <View style={styles.imageSection}>
-          {book.cover_image ? (
-            <Image
-              source={{ uri: getImageUrl(book.cover_image) }}
-              style={styles.bookImage}
-              resizeMode="contain"
+        <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+          <TouchableOpacity style={styles.headerButton} onPress={toggleFavorite}>
+            <Ionicons 
+              name={isFavorite ? "heart" : "heart-outline"} 
+              size={24} 
+              color={isFavorite ? "#F44336" : (darkMode ? "#000000ff" : "#000")} 
             />
-          ) : (
-            <View style={styles.placeholderImage}>
-              <Ionicons name="book" size={80} color="#999" />
-            </View>
-          )}
-        </View>
+          </TouchableOpacity>
+        </Animated.View>
+      </Animated.View>
+
+      <Animated.ScrollView 
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+      >
+        {/* Imagen del libro con parallax y efecto 3D */}
+        <Animated.View 
+          style={[
+            styles.imageSection,
+            {
+              transform: [
+                { translateY: imageTranslateY },
+                { scale: imageScale }
+              ]
+            }
+          ]}
+        >
+      <Animated.View
+        {...coverPanResponder.panHandlers}
+        style={[
+          styles.bookImageWrapper,
+          coverAnimatedStyle,
+          { 
+            opacity: fadeAnim, 
+            transform: [...coverAnimatedStyle.transform, { scale: scaleAnim }] 
+          }
+        ]}
+      >
+        {book.cover_image ? (
+          <View style={styles.bookWithPages}>
+            {/*  Páginas del libro con animación de apertura */}
+            <Animated.View 
+              style={[
+                styles.bookPages,
+                {
+                  transform: [
+                    {
+                      translateX: bookOpen.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, -15], // Se mueven a la izquierda
+                      })
+                    }
+                  ]
+                }
+              ]}
+            >
+              <Animated.View 
+                style={[
+                  styles.page, 
+                  styles.page1,
+                  {
+                    opacity: bookOpen.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0.3], // Se desvanece al abrir
+                    })
+                  }
+                ]} 
+              />
+              <Animated.View 
+                style={[
+                  styles.page, 
+                  styles.page2,
+                  {
+                    opacity: bookOpen.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0.5],
+                    })
+                  }
+                ]} 
+              />
+              <Animated.View 
+                style={[
+                  styles.page, 
+                  styles.page3,
+                  {
+                    opacity: bookOpen.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0.7],
+                    })
+                  }
+                ]} 
+              />
+              
+              {/*  Páginas interiores que se ven al abrir */}
+              <Animated.View
+                style={[
+                  styles.innerPages,
+                  {
+                    opacity: bookOpen,
+                    transform: [
+                      {
+                        translateX: bookOpen.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, -10],
+                        })
+                      }
+                    ]
+                  }
+                ]}
+              >
+                {/* Simulación de texto en las páginas */}
+                <View style={styles.pageLines}>
+                  <View style={styles.textLine} />
+                  <View style={styles.textLine} />
+                  <View style={styles.textLine} />
+                  <View style={styles.textLine} />
+                  <View style={styles.textLine} />
+                </View>
+              </Animated.View>
+            </Animated.View>
+            
+            {/*  Portada principal con animación de apertura */}
+            <Animated.View 
+              style={[
+                styles.bookFrontCover,
+                {
+                  transform: [
+                    {
+                      rotateY: bookOpen.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', '-15deg'], // Rota ligeramente
+                      })
+                    },
+                    { perspective: 1000 }
+                  ]
+                }
+              ]}
+            >
+              <Image
+                source={{ uri: getImageUrl(book.cover_image) }}
+                style={styles.bookImage}
+                resizeMode="cover"
+              />
+              
+              {/*  Efecto de brillo */}
+              <Animated.View 
+                style={[
+                  styles.coverShineOverlay,
+                  {
+                    opacity: shine.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 0.3]
+                    }),
+                  }
+                ]}
+              >
+                <Animated.View 
+                  style={{
+                    position: 'absolute',
+                    top: -50,
+                    bottom: -50,
+                    width: 100,
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    shadowColor: '#fff',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 1,
+                    shadowRadius: 30,
+                    transform: [
+                      { rotate: '15deg' },
+                      {
+                        translateX: rotateY.interpolate({
+                          inputRange: [-10, 10],
+                          outputRange: [-150, 150]
+                        })
+                      }
+                    ]
+                  }}
+                />
+              </Animated.View>
+              
+              {/*  Borde dorado elegante */}
+              <View style={styles.bookBorder} />
+            </Animated.View>
+          </View>
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Ionicons name="book" size={80} color="#999" />
+          </View>
+        )}
+      </Animated.View>
+        </Animated.View>
 
         {/* Información del libro */}
-        <View style={[styles.infoSection, darkMode && styles.infoSectionDark]}>
+        <Animated.View 
+          style={[
+            styles.infoSection, 
+            darkMode && styles.infoSectionDark,
+            { opacity: fadeAnim }
+          ]}
+        >
           {/* Badge de disponibilidad */}
           <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
             <Ionicons name={statusConfig.icon} size={16} color="#fff" />
@@ -301,8 +704,8 @@ const fetchBookDetail = async () => {
               </Text>
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </Animated.View>
+      </Animated.ScrollView>
 
       {/* Footer con controles de cantidad y botón de compra */}
       <View style={[styles.footer, darkMode && styles.footerDark]}>
@@ -336,25 +739,38 @@ const fetchBookDetail = async () => {
           </View>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.addToCartButton,
-            book.stock_quantity === 0 && styles.addToCartButtonDisabled
-          ]}
-          onPress={handleAddToCart}
-          disabled={book.stock_quantity === 0}
-        >
-          <Ionicons name="cart" size={20} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={styles.addToCartText}>
-            {book.stock_quantity === 0 ? "Agotado" : "Agregar al carrito"}
-          </Text>
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+          <TouchableOpacity
+            style={[
+              styles.addToCartButton,
+              book.stock_quantity === 0 && styles.addToCartButtonDisabled
+            ]}
+            onPress={handleAddToCart}
+            disabled={book.stock_quantity === 0}
+          >
+            <Ionicons name="cart" size={20} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.addToCartText}>
+              {book.stock_quantity === 0 ? "Agotado" : "Agregar al carrito"}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
+        {/* 🎉 Confetti */}
+              {showConfetti && (
+                <ConfettiCannon
+                  ref={confettiRef}
+                  count={80}
+                  origin={{ x: SCREEN_WIDTH / 2, y: 0 }}
+                  autoStart={true}
+                  fadeOut={true}
+                  fallSpeed={2800}
+                  colors={['#ffa3c2', '#ff8fb3', '#4CAF50', '#FFD700', '#FF6B6B', '#4ECDC4']}
+                  explosionSpeed={400}
+                />
+              )}
     </View>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -371,9 +787,9 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingTop: 50,
+    paddingTop: 20,
     paddingHorizontal: 16,
-    paddingBottom: 26,
+    paddingBottom: 16,
     zIndex: 10,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
   },
@@ -398,7 +814,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-    paddingTop: 100,
+    paddingTop: 20,
   },
   bookImage: {
     width: SCREEN_WIDTH * 0.6,
@@ -645,4 +1061,145 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  //  NUEVOS ESTILOS 
+bookImageWrapper: {
+  position: 'relative',
+},
+coverShineOverlay: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  overflow: 'hidden',
+  pointerEvents: 'none',
+  borderRadius: 8,
+},
+coverShineGradient: {
+  width: '200%',
+  height: '100%',
+  backgroundColor: 'transparent',
+  borderLeftWidth: 50,
+  borderLeftColor: 'rgba(255, 255, 255, 0.7)',
+  borderRightWidth: 50,
+  borderRightColor: 'transparent',
+  transform: [{ rotate: '20deg' }],
+  marginLeft: -40,
+},
+// ESTILOS PARA LIBRO 3D CON PÁGINAS Y ANIMACIÓN
+
+bookWithPages: {
+  position: 'relative',
+  width: SCREEN_WIDTH * 0.6,
+  height: 350,
+},
+
+bookPages: {
+  position: 'absolute',
+  top: 0,
+  right: 0,
+  width: '100%',
+  height: '100%',
+},
+
+page: {
+  position: 'absolute',
+  width: '98%',
+  height: '99%',
+  backgroundColor: '#f9f7f0', // Color crema tipo página
+  borderRadius: 6,
+  shadowColor: '#000',
+  shadowOffset: { width: 3, height: 3 },
+  shadowOpacity: 0.25,
+  shadowRadius: 5,
+  elevation: 4,
+  borderWidth: 1,
+  borderColor: '#e8e4d8',
+  borderRightWidth: 2,
+  borderRightColor: '#d4ceb8',
+},
+
+page1: {
+  top: 8,
+  right: 8,
+  zIndex: 1,
+  backgroundColor: '#faf8f3',
+},
+
+page2: {
+  top: 4,
+  right: 4,
+  zIndex: 2,
+  backgroundColor: '#f9f7f1',
+},
+
+page3: {
+  top: 0,
+  right: 0,
+  zIndex: 3,
+  backgroundColor: '#f9f7f0',
+},
+
+// Páginas interiores visibles al abrir
+innerPages: {
+  position: 'absolute',
+  width: '95%',
+  height: '97%',
+  top: '1.5%',
+  right: '2.5%',
+  backgroundColor: '#fdfbf7',
+  borderRadius: 6,
+  zIndex: 4,
+  padding: 20,
+  shadowColor: '#000',
+  shadowOffset: { width: -2, height: 0 },
+  shadowOpacity: 0.15,
+  shadowRadius: 4,
+},
+
+pageLines: {
+  flex: 1,
+  justifyContent: 'space-evenly',
+  paddingVertical: 40,
+},
+
+textLine: {
+  height: 2,
+  backgroundColor: '#e0ddd0',
+  marginBottom: 15,
+  borderRadius: 1,
+},
+
+bookFrontCover: {
+  position: 'relative',
+  width: '100%',
+  height: '100%',
+  zIndex: 10,
+  borderRadius: 8,
+  overflow: 'hidden',
+  shadowColor: '#000',
+  shadowOffset: { width: 6, height: 10 },
+  shadowOpacity: 0.45,
+  shadowRadius: 20,
+  elevation: 15,
+  backgroundColor: '#fff',
+},
+
+// Borde decorativo dorado
+bookBorder: {
+  position: 'absolute',
+  top: 12,
+  left: 12,
+  right: 12,
+  bottom: 12,
+  borderWidth: 2,
+  borderColor: 'rgba(218, 165, 32, 0.3)', // Dorado sutil
+  borderRadius: 6,
+  pointerEvents: 'none',
+},
+
+bookImage: {
+  width: '100%',
+  height: '100%',
+},
 });

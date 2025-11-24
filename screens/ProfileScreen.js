@@ -40,7 +40,7 @@ export default function ProfileScreen() {
         setUser(JSON.parse(userData));
       } else {
         // Si no hay datos guardados, mandamos al usuario al login
-        router.replace('/login');
+        router.push('/login');
       }
       setLoading(false);
     } catch (error) {

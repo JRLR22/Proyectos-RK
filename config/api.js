@@ -1,76 +1,210 @@
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 /**
- * Configuración de la API según el entorno
+ *  CONFIGURACIÓN AUTOMÁTICA DE API
  * 
- * Para desarrollo:
- * - iOS Simulator: usa localhost
- * - Android Emulator: usa 10.0.2.2 (IP especial que apunta a localhost de la PC)
- * - Dispositivo físico: usa la IP de tu internet (ej: 192.168.1.x)
+ * Detecta automáticamente dónde estás corriendo la app y usa la URL correcta.
+ * 
+ * Soporta:
+ *  iOS Simulator
+ *  Android Emulator  
+ *  Dispositivo físico (Android/iOS)
+ *  Expo Go
+ *  Web
  */
 
-const getDevelopmentUrl = () => {
+// Pon la IP local una sola vez
+  // Para encontrar la IP:
+  // - Windows: abre CMD y escribe "ipconfig", busca "IPv4"
+  // - Mac/Linux: abre Terminal y escribe "ifconfig" o "ip addr"
 
-   // return 'http://192.168.100.2:8000';  // Reemplaza con tu IP
+const LOCAL_IP = '192.168.100.2'; // Aquí va la ip
 
-  // Android Emulator, cambia a:
-  // return 'http://10.0.2.2:8000'; 
+// Puerto de tu backend
+const BACKEND_PORT = '8000';
 
-  // iOS Simulator y web pueden usar localhost
-   return 'http://localhost:8000';
+/**
+ * Detecta automáticamente la mejor URL según el entorno
+ */
+const getApiUrl = () => {
+  // Si estamos en producción, usa la URL de producción
+  if (!__DEV__) {
+    return 'https://api.gonvill.com';
+  }
+
+  // WEB (navegador)
+  if (Platform.OS === 'web') {
+    return `http://localhost:${BACKEND_PORT}`;
+  }
+
+  // Para móviles, verificamos si es dispositivo real o emulador
+  const isPhysicalDevice = Constants.isDevice === true || 
+                          Constants.isDevice === undefined; // Fix para cuando es undefined
+
+  //  iOS Simulator
+  if (Platform.OS === 'ios' && !isPhysicalDevice) {
+    return `http://localhost:${BACKEND_PORT}`;
+  }
+
+  //  Android Emulator (solo cuando sabemos 100% que es emulador)
+  if (Platform.OS === 'android' && Constants.isDevice === false) {
+    return `http://10.0.2.2:${BACKEND_PORT}`;
+  }
+
+  //  Dispositivo físico (default seguro)
+    // Si hay duda, siempre usa la IP local (funciona en Expo Go)
+  return `http://${LOCAL_IP}:${BACKEND_PORT}`;
 };
 
-const API_URLS = {
-  development: getDevelopmentUrl(),
-  production: 'https://api.gonvill.com', // Cambiemos esto cuando tengamos la API en producción
-};
+// URL base de la API
+export const API_BASE_URL = getApiUrl();
 
-// Detecta automáticamente el entorno
-const ENV = __DEV__ ? 'development' : 'production';
-
-export const API_BASE_URL = API_URLS[ENV];
-
-// Utilidades útiles para hacer llamadas a la API
+//  Endpoints organizados
 export const API_ENDPOINTS = {
+  // Libros
   books: '/api/books',
+  bookById: (id) => `/api/books/${id}`,
+  
+  // Categorías
   categories: '/api/categories',
-  auth: {
-    login: '/api/auth/login',
-    register: '/api/auth/register',
-    profile: '/api/auth/profile',
-  },
+  categoryBooks: (categoryId) => `/api/categories/${categoryId}/books`,
+  
+  // Autenticación
+  login: '/api/login',
+  register: '/api/register',
+  profile: '/api/profile',
+  logout: '/api/logout',
+  
+  // Carrito
   cart: '/api/cart',
+  addToCart: '/api/cart/add',
+  updateCart: '/api/cart/update',
+  removeFromCart: '/api/cart/remove',
+  clearCart: '/api/cart/clear',
+  
+  // Órdenes
   orders: '/api/orders',
+  orderById: (id) => `/api/orders/${id}`,
+  createOrder: '/api/orders/create',
+  
+  // Favoritos
+  favorites: '/api/favorites',
+  addFavorite: '/api/favorites/add',
+  removeFavorite: '/api/favorites/remove',
+
 };
 
-// Helper para construir URLs completas
+/**
+ * Construye URLs de imágenes
+ */
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
+  
+  // Si ya es una URL completa, la devuelve tal cual
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // Si es una ruta relativa, la combina con la URL base
   return `${API_BASE_URL}/img/${imagePath}`;
 };
 
-// Helper para hacer fetch con configuración base
+/**
+ * Helper mejorado para hacer fetch con manejo de errores
+ */
 export const apiFetch = async (endpoint, options = {}) => {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-  
-  const defaultOptions = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  };
+  try {
+    // Si el endpoint ya es una URL completa, la usa directamente
+    const url = endpoint.startsWith('http') 
+      ? endpoint 
+      : `${API_BASE_URL}${endpoint}`;
+    
+    // Configuración por defecto
+    const defaultOptions = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    };
 
-  const response = await fetch(url, { ...defaultOptions, ...options });
-  
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    console.log(` API Request: ${options.method || 'GET'} ${url}`);
+
+    const response = await fetch(url, { ...defaultOptions, ...options });
+    
+    // Manejo de errores HTTP
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message || 
+        `Error ${response.status}: ${response.statusText}`
+      );
+    }
+    
+    const data = await response.json();
+    console.log(` API Response:`, data);
+    
+    return data;
+
+  } catch (error) {
+    console.error(`❌ API Error:`, error);
+    
+    // Errores de red
+    if (error.message.includes('Network request failed')) {
+      throw new Error('Sin conexión a internet. Verifica tu red.');
+    }
+    
+    // Errores de timeout
+    if (error.message.includes('timeout')) {
+      throw new Error('La petición tardó demasiado. Intenta de nuevo.');
+    }
+    
+    // Otros errores
+    throw error;
   }
-  
-  return response.json();
 };
+
+/**
+ * Helper para hacer peticiones autenticadas
+ */
+export const apiAuthFetch = async (endpoint, options = {}, token) => {
+  return apiFetch(endpoint, {
+    ...options,
+    headers: {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+};
+
+/**
+ *  Helper para debug: muestra la configuración actual
+ */
+export const debugApiConfig = () => {
+  const isPhysicalDevice = Constants.isDevice === true || 
+                          Constants.isDevice === undefined;
+  
+  console.log('🔧 ===== Configuración de la API =====');
+  console.log('📱 Platforma:', Platform.OS);
+  console.log('🔍 Constants.isDevice:', Constants.isDevice);
+  console.log(' Se detectó dispositivo físico?:', isPhysicalDevice);
+  console.log('🏗️  Modo desarrollo?:', __DEV__);
+  console.log('🌐 URL DE LA API:', API_BASE_URL);
+  console.log('📍 IP LOCAL:', LOCAL_IP);
+  console.log('🔌 PUERTO:', BACKEND_PORT);
+  console.log('================================');
+};
+
+// Para debug en desarrollo
+if (__DEV__) {
+  debugApiConfig();
+}
 
 export default {
   API_BASE_URL,
   API_ENDPOINTS,
   getImageUrl,
   apiFetch,
+  apiAuthFetch,
+  debugApiConfig,
 };

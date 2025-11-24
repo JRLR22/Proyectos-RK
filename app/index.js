@@ -9,6 +9,8 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Modal,
+  PanResponder,
   Platform,
   RefreshControl,
   StatusBar,
@@ -28,6 +30,319 @@ import DrawerMenu from "../screens/DrawerMenu";
 
 // Obtenemos el ancho de la pantalla para usarlo en el carrusel
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+
+// Componente separado para cada tarjeta de libro con efecto 3D
+const BookCard3D = ({ item, index, darkMode, onPress, onAddToCart, onToggleFavorite, isFavorite, getStatusConfig, getCardSize }) => {
+  // Animaciones para el efecto 3D
+  const rotateX = useRef(new Animated.Value(0)).current;
+  const rotateY = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+  const shine = useRef(new Animated.Value(0)).current; //  Brillo
+  const cardDimensions = useRef({ width: 0, height: 0 });
+
+  // Animaciones de entrada
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+
+  const statusConfig = getStatusConfig(item.stock_quantity);
+  const isBookFavorite = isFavorite(item.book_id);
+  const cardSize = getCardSize(index);
+
+  // Animación de entrada al montar el componente
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        delay: (index % 10) * 80, // Solo los primeros 10 tienen delay
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        delay: (index % 10) * 80,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  // PanResponder para capturar los gestos táctiles
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      
+      onPanResponderGrant: (evt) => {
+        const { locationX, locationY } = evt.nativeEvent;
+        updateRotation(locationX, locationY);
+      },
+      
+      onPanResponderMove: (evt) => {
+        const { locationX, locationY } = evt.nativeEvent;
+        updateRotation(locationX, locationY);
+      },
+      
+      onPanResponderRelease: () => {
+        resetRotation();
+      },
+      
+      onPanResponderTerminate: () => {
+        resetRotation();
+      },
+    })
+  ).current;
+
+  const updateRotation = (x, y) => {
+    if (!cardDimensions.current.width) return;
+
+    const { width, height } = cardDimensions.current;
+    
+    const normalizedX = ((x / width) - 0.5) * 2;
+    const normalizedY = ((y / height) - 0.5) * 2;
+
+    Animated.parallel([
+      Animated.spring(rotateX, {
+        toValue: -normalizedY * 15,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 60,
+      }),
+      Animated.spring(rotateY, {
+        toValue: normalizedX * 15,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 60,
+      }),
+      Animated.spring(scale, {
+        toValue: 1.08,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 60,
+      }),
+      // Activar el brillo
+      Animated.timing(shine, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const resetRotation = () => {
+    Animated.parallel([
+      Animated.spring(rotateX, {
+        toValue: 0,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 60,
+      }),
+      Animated.spring(rotateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 60,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 60,
+      }),
+      // Ocultar el brillo
+      Animated.timing(shine, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const onLayout = (event) => {
+    const { width, height } = event.nativeEvent.layout;
+    cardDimensions.current = { width, height };
+  };
+
+  //  Estilo animado mejorado con sombra dinámica
+//  Estilo animado mejorado (SIN shadowOffset animado)
+const animatedStyle = {
+  opacity: fadeAnim,
+  transform: [
+    { translateY: slideAnim },
+    { perspective: 800 },
+    { 
+      rotateX: rotateX.interpolate({
+        inputRange: [-20, 20],
+        outputRange: ['-20deg', '20deg']
+      })
+    },
+    { 
+      rotateY: rotateY.interpolate({
+        inputRange: [-20, 20],
+        outputRange: ['-20deg', '10deg']
+      })
+    },
+    { scale: scale },
+  ],
+};
+
+  return (
+    <Animated.View 
+      style={[
+        styles.bookCard,
+        darkMode && styles.bookCardDark,
+        cardSize === 'large' && styles.bookCardLarge,
+        animatedStyle,
+      ]}
+      onLayout={onLayout}
+      {...panResponder.panHandlers}
+    >
+      <TouchableOpacity 
+        activeOpacity={0.9}
+        onPress={() => onPress(item.book_id)}
+        style={styles.bookCardInner}
+      >
+        <View style={[
+          styles.bookImageContainer,
+          cardSize === 'large' && styles.bookImageContainerLarge
+        ]}>
+          {item.cover_image ? (
+            <Image 
+              source={{ uri: getImageUrl(item.cover_image) }}
+              style={styles.bookImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.bookImagePlaceholder}>
+              <Ionicons name="book" size={40} color="#999" />
+              <Text style={styles.noImageText}>Sin portada</Text>
+            </View>
+          )}
+          
+          <View style={styles.imageGradient} />
+
+          {/*  Capa de brillo animada */}
+          <Animated.View 
+            style={[
+              styles.coverShineOverlay,
+              {
+                opacity: shine.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 0.3]
+                }),
+              }
+            ]}
+          >
+            <Animated.View 
+              style={{
+                position: 'absolute',
+                top: -50,
+                bottom: -50,
+                width: 100,
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                shadowColor: '#fff',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 1,
+                shadowRadius: 30,
+                transform: [
+                  { rotate: '15deg' },
+                  {
+                    translateX: rotateY.interpolate({
+                      inputRange: [-10, 10],
+                      outputRange: [-150, 150]
+                    })
+                  }
+                ]
+              }}
+            />
+          </Animated.View>
+
+          {/* Badge de disponibilidad */}
+          <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
+            <Ionicons name={statusConfig.icon} size={14} color="#fff" />
+            <Text style={styles.statusText}>{statusConfig.text}</Text>
+          </View>
+
+          {/*  Badge de Popular/Bestseller */}
+          {item.stock_quantity > 0 && item.stock_quantity <= 5 && (
+            <View style={styles.bestsellerBadge}>
+              <Ionicons name="flame" size={12} color="#fff" />
+              <Text style={styles.bestsellerText}>¡Popular!</Text>
+            </View>
+          )}
+
+          {/*  Badge de Nuevo */}
+          {item.category_name === "Novedades" && (
+            <View style={styles.newBadge}>
+              <Ionicons name="sparkles" size={12} color="#fff" />
+              <Text style={styles.newText}>Nuevo</Text>
+            </View>
+          )}
+
+          {/* Botón de favoritos */}
+          <TouchableOpacity 
+            style={[
+              styles.favoriteButton,
+              isBookFavorite && styles.favoriteButtonActive
+            ]}
+            onPress={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(item);
+            }}
+          >
+            <Ionicons 
+              name={isBookFavorite ? "heart" : "heart-outline"} 
+              size={22} 
+              color={isBookFavorite ? "#F44336" : "#fff"} 
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.bookInfo}>
+          <Text style={[styles.bookTitle, darkMode && styles.bookTitleDark]} numberOfLines={2}>
+            {item.title}
+          </Text>
+
+          <View style={styles.authorRow}>
+            <Ionicons name="person-outline" size={14} color={darkMode ? "#999" : "#666"} />
+            <Text style={[styles.bookAuthor, darkMode && styles.bookAuthorDark]} numberOfLines={1}>
+              {item.authors || "Autor desconocido"}
+            </Text>
+          </View>
+
+          <View style={styles.bookFooter}>
+            <View>
+              <Text style={[styles.priceLabel, darkMode && styles.priceLabelDark]}>Precio</Text>
+              <Text style={styles.bookPrice}>
+                ${parseFloat(item.price).toFixed(2)}
+              </Text>
+            </View>
+
+            <TouchableOpacity 
+              style={[
+                styles.addButton,
+                item.stock_quantity === 0 && styles.addButtonDisabled
+              ]}
+              onPress={(e) => {
+                e.stopPropagation();
+                onAddToCart(item);
+              }}
+              disabled={item.stock_quantity === 0}
+            >
+              <Ionicons 
+                name={item.stock_quantity === 0 ? "close" : "add"} 
+                size={20} 
+                color="#fff" 
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -50,7 +365,7 @@ export default function HomeScreen() {
   const [favKey, setFavKey] = useState(null); // Clave para guardar favoritos en AsyncStorage
   const [showConfetti, setShowConfetti] = useState(false);// Estados para el confetti
   const confettiRef = useRef(null);//
-
+  const [searchModalVisible, setSearchModalVisible] = useState(false);
 
   // Referencias y valores para animaciones y el carrusel
   const scrollY = useRef(new Animated.Value(0)).current; // Para animar el header al hacer scroll
@@ -273,7 +588,8 @@ export default function HomeScreen() {
     try {
       const data = await apiFetch(API_ENDPOINTS.categories);
       const categoryNames = data.map(cat => cat.name);
-      setCategories(['Todos', ...categoryNames]);
+      const limitedCategories = categoryNames.slice(0, 5);
+      setCategories(['Todos', ...limitedCategories]);
     } catch (error) {
       console.error("Error al obtener categorías:", error);
     }
@@ -335,7 +651,7 @@ export default function HomeScreen() {
     if (isLoggedIn) {
       router.push('/profile'); // Si hay sesión, va al perfil
     } else {
-      router.push('login'); // Si no, va al login
+      router.push('/login'); // Si no, va al login
     }
   }, [isLoggedIn, router]);
 
@@ -350,7 +666,7 @@ export default function HomeScreen() {
     return (pattern === 0 || pattern === 3) ? 'large' : 'small';
   }, []);
 
-  // Agrega un libro al carrito
+// Agrega un libro al carrito
 const handleAddToCart = useCallback((item) => {
   if (item.stock_quantity > 0) {
     addToCart(item);
@@ -358,10 +674,10 @@ const handleAddToCart = useCallback((item) => {
     // Activa el confetti
     setShowConfetti(true);
     
-    // Vibración triple
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 100);
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 200);
+    // Vibración más satisfactoria
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
     
     if (Platform.OS === 'web') {
       alert(`"${item.title}" agregado al carrito 🎉`);
@@ -603,112 +919,47 @@ const handleAddToCart = useCallback((item) => {
               </Text>
             </TouchableOpacity>
           )}
+          //Botón ver todas las categorías
+          ListFooterComponent={() => (
+          <TouchableOpacity
+            style={[
+              styles.categoryChip,
+              styles.seeAllChip,
+              darkMode && styles.categoryChipDark,
+            ]}
+            onPress={() => router.push('/categories')} // Navega a pantalla de categorías
+          >
+            <Ionicons name="grid-outline" size={16} color={darkMode ? "#ffa3c2" : "#ffa3c2"} />
+            <Text
+              style={[
+                styles.categoryText,
+                darkMode && styles.categoryTextDark,
+                { marginLeft: 6 }
+              ]}
+            >
+              Ver todas
+            </Text>
+          </TouchableOpacity>
+        )}
         />
       )}
     </View>
   ), [selectedCategory, categories, darkMode]);
 
   // Renderiza cada tarjeta de libro
-  const renderBook = useCallback(({ item, index }) => {
-    const statusConfig = getStatusConfig(item.stock_quantity);
-    const isBookFavorite = isFavorite(item.book_id);
-    const cardSize = getCardSize(index);
-
-    return (
-      <View style={[
-        styles.bookCard,
-        darkMode && styles.bookCardDark,
-        cardSize === 'large' && styles.bookCardLarge,
-      ]}>
-        <TouchableOpacity 
-          activeOpacity={0.8}
-          onPress={() => router.push(`/book/${item.book_id}`)}
-          style={styles.bookCardInner}
-        >
-          {/* Imagen de portada */}
-          <View style={[
-            styles.bookImageContainer,
-            cardSize === 'large' && styles.bookImageContainerLarge
-          ]}>
-            {item.cover_image ? (
-              <Image 
-                source={{ uri: getImageUrl(item.cover_image) }}
-                style={styles.bookImage}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={styles.bookImagePlaceholder}>
-                <Ionicons name="book" size={40} color="#999" />
-                <Text style={styles.noImageText}>Sin portada</Text>
-              </View>
-            )}
-            
-            <View style={styles.imageGradient} />
-
-            {/* Badge de disponibilidad */}
-            <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
-              <Ionicons name={statusConfig.icon} size={14} color="#fff" />
-              <Text style={styles.statusText}>{statusConfig.text}</Text>
-            </View>
-
-            {/* Botón de favoritos */}
-            <TouchableOpacity 
-              style={[
-                styles.favoriteButton,
-                isBookFavorite && styles.favoriteButtonActive
-              ]}
-              onPress={() => toggleFavorite(item)}
-            >
-              <Ionicons 
-                name={isBookFavorite ? "heart" : "heart-outline"} 
-                size={22} 
-                color={isBookFavorite ? "#F44336" : "#fff"} 
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Información del libro */}
-          <View style={styles.bookInfo}>
-            <Text style={[styles.bookTitle, darkMode && styles.bookTitleDark]} numberOfLines={2}>
-              {item.title}
-            </Text>
-
-            <View style={styles.authorRow}>
-              <Ionicons name="person-outline" size={14} color={darkMode ? "#999" : "#666"} />
-              <Text style={[styles.bookAuthor, darkMode && styles.bookAuthorDark]} numberOfLines={1}>
-                {item.authors || "Autor desconocido"}
-              </Text>
-            </View>
-
-            {/* Precio y botón de agregar */}
-            <View style={styles.bookFooter}>
-              <View>
-                <Text style={[styles.priceLabel, darkMode && styles.priceLabelDark]}>Precio</Text>
-                <Text style={styles.bookPrice}>
-                  ${parseFloat(item.price).toFixed(2)}
-                </Text>
-              </View>
-
-              <TouchableOpacity 
-                style={[
-                  styles.addButton,
-                  item.stock_quantity === 0 && styles.addButtonDisabled
-                ]}
-                onPress={() => handleAddToCart(item)}
-                disabled={item.stock_quantity === 0}
-              >
-                <Ionicons 
-                  name={item.stock_quantity === 0 ? "close" : "add"} 
-                  size={20} 
-                  color="#fff" 
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </View>
-    );
-  }, [darkMode, getStatusConfig, isFavorite, getCardSize, toggleFavorite, handleAddToCart]);
+  const renderBook = useCallback(({ item, index }) => (
+    <BookCard3D
+      item={item}
+      index={index}
+      darkMode={darkMode}
+      onPress={(bookId) => router.push(`/book/${bookId}`)}
+      onAddToCart={handleAddToCart}
+      onToggleFavorite={toggleFavorite}
+      isFavorite={isFavorite}
+      getStatusConfig={getStatusConfig}
+      getCardSize={getCardSize}
+    />
+  ), [darkMode, handleAddToCart, toggleFavorite, isFavorite, getStatusConfig, getCardSize, router]);
 
   // Componente que va en el header del FlatList (carrusel + filtros)
   const ListHeaderComponent = useMemo(() => (
@@ -745,16 +996,6 @@ const handleAddToCart = useCallback((item) => {
       />
       
       {renderStaticHeader()}
-
-      <View style={[styles.fixedSearchContainer, darkMode && styles.fixedSearchContainerDark]}>
-        <MorphingSearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onClear={() => setSearchQuery("")}
-          darkMode={darkMode}
-        />
-      </View>
-
       
       {/* FlatList principal con todos los libros */}
       <Animated.FlatList
@@ -795,6 +1036,89 @@ const handleAddToCart = useCallback((item) => {
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
       />
+
+      {/* 🔍 Botón flotante de búsqueda */}
+      <TouchableOpacity
+        style={[styles.floatingSearchButton, darkMode && styles.floatingSearchButtonDark]}
+        onPress={() => setSearchModalVisible(true)}
+        activeOpacity={0.9}
+      >
+        <Ionicons name="search" size={24} color="#fff" />
+      </TouchableOpacity>
+
+      {/* 🔍 Modal de búsqueda */}
+      <Modal
+        visible={searchModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setSearchModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.searchModalContainer, darkMode && styles.searchModalContainerDark]}>
+            {/* Header del modal */}
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, darkMode && styles.modalTitleDark]}>
+                Buscar libros
+              </Text>
+              <TouchableOpacity
+                onPress={() => setSearchModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={28} color={darkMode ? "#fff" : "#1A1A1A"} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Barra de búsqueda en el modal */}
+            <View style={styles.modalSearchContainer}>
+              <MorphingSearchBar
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onClear={() => setSearchQuery("")}
+                darkMode={darkMode}
+                autoFocus={true}
+              />
+            </View>
+
+            {/* Sugerencias o resultados rápidos */}
+            {searchQuery.trim() === "" ? (
+              <View style={styles.searchSuggestions}>
+                <Text style={[styles.suggestionsTitle, darkMode && styles.suggestionsTitleDark]}>
+                  Búsquedas populares
+                </Text>
+                {["CREEPY", "QUÍMICA 1 BACHILLERATO", "UNA MUJER COMO TÚ", "CÓDIGO BESTSELLER"].map((title) => (
+                  <TouchableOpacity
+                    key={title}
+                    style={[styles.suggestionChip, darkMode && styles.suggestionChipDark]}
+                    onPress={() => {
+                      setSearchQuery(title);
+                      setSearchModalVisible(false);
+                    }}
+                  >
+                    <Ionicons name="trending-up" size={16} color="#ffa3c2" />
+                    <Text style={[styles.suggestionText, darkMode && styles.suggestionTextDark]}>
+                      {title}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.searchResults}>
+                <Text style={[styles.resultsCount, darkMode && styles.resultsCountDark]}>
+                  {filteredBooks.length} {filteredBooks.length === 1 ? 'resultado' : 'resultados'}
+                </Text>
+                <TouchableOpacity
+                  style={styles.viewResultsButton}
+                  onPress={() => setSearchModalVisible(false)}
+                >
+                  <Text style={styles.viewResultsText}>Ver resultados</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#ffa3c2" />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
       {/* Confetizaso */}
        {showConfetti && (
         <ConfettiCannon
@@ -1147,6 +1471,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(0, 0, 0, 0.04)",
+    backfaceVisibility: 'hidden',
   },
   bookCardDark: {
     backgroundColor: "#1E1E1E",
@@ -1357,5 +1682,223 @@ const styles = StyleSheet.create({
   },
   emptySubtextDark: {
     color: "#666",
+  },
+
+// NUEVOS ESTILOS 
+  // Efecto de brillo
+shineOverlay: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  overflow: 'hidden',
+  pointerEvents: 'none', // No interfiere con los toques
+},
+shineGradient: {
+  width: '200%',
+  height: '100%',
+  backgroundColor: 'transparent',
+  borderLeftWidth: 60,
+  borderLeftColor: 'rgba(255, 255, 255, 0.6)',
+  borderRightWidth: 60,
+  borderRightColor: 'transparent',
+  transform: [{ rotate: '15deg' }],
+  marginLeft: -50,
+},
+
+// Badge de Bestseller/Popular
+bestsellerBadge: {
+  position: "absolute",
+  top: 50,
+  right: 10,
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 8,
+  paddingVertical: 5,
+  borderRadius: 12,
+  backgroundColor: "rgba(255, 87, 34, 0.95)",
+  gap: 3,
+  shadowColor: "#FF5722",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.4,
+  shadowRadius: 4,
+  elevation: 3,
+},
+bestsellerText: {
+  color: "#fff",
+  fontSize: 10,
+  fontWeight: "700",
+  letterSpacing: 0.3,
+},
+
+// Badge de Nuevo
+newBadge: {
+  position: "absolute",
+  top: 50,
+  left: 10,
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 8,
+  paddingVertical: 5,
+  borderRadius: 12,
+  backgroundColor: "rgba(76, 175, 80, 0.95)",
+  gap: 3,
+  shadowColor: "#4CAF50",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.4,
+  shadowRadius: 4,
+  elevation: 3,
+},
+newText: {
+  color: "#fff",
+  fontSize: 10,
+  fontWeight: "700",
+  letterSpacing: 0.3,
+},
+// ✨ ESTILOS PARA BÚSQUEDA FLOTANTE Y MODAL
+
+// Botón flotante de búsqueda (esquina inferior izquierda)
+floatingSearchButton: {
+  position: 'absolute',
+  bottom: 30,
+  left: 20,
+  width: 60,
+  height: 60,
+  borderRadius: 30,
+  backgroundColor: '#ffa3c2',
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#ffa3c2',
+  shadowOffset: { width: 0, height: 8 },
+  shadowOpacity: 0.4,
+  shadowRadius: 16,
+  elevation: 10,
+  zIndex: 100,
+},
+floatingSearchButtonDark: {
+  backgroundColor: '#ff8fb3',
+},
+
+// Modal de búsqueda
+modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  justifyContent: 'flex-end',
+},
+searchModalContainer: {
+  backgroundColor: '#fff',
+  borderTopLeftRadius: 24,
+  borderTopRightRadius: 24,
+  paddingTop: 20,
+  paddingHorizontal: 20,
+  paddingBottom: 40,
+  maxHeight: '80%',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: -4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 12,
+  elevation: 20,
+},
+searchModalContainerDark: {
+  backgroundColor: '#1A1A1A',
+},
+
+// Header del modal
+modalHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 20,
+},
+modalTitle: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  color: '#1A1A1A',
+},
+modalTitleDark: {
+  color: '#fff',
+},
+closeButton: {
+  padding: 4,
+},
+
+// Contenedor de la barra de búsqueda en el modal
+modalSearchContainer: {
+  marginBottom: 24,
+},
+
+// Sugerencias de búsqueda
+searchSuggestions: {
+  marginTop: 8,
+},
+suggestionsTitle: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#666',
+  marginBottom: 12,
+  textTransform: 'uppercase',
+  letterSpacing: 0.5,
+},
+suggestionsTitleDark: {
+  color: '#999',
+},
+suggestionChip: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#f5f5f5',
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  borderRadius: 12,
+  marginBottom: 8,
+  gap: 10,
+},
+suggestionChipDark: {
+  backgroundColor: '#2A2A2A',
+},
+suggestionText: {
+  fontSize: 15,
+  color: '#333',
+  fontWeight: '500',
+},
+suggestionTextDark: {
+  color: '#fff',
+},
+
+// Resultados de búsqueda
+searchResults: {
+  marginTop: 8,
+},
+resultsCount: {
+  fontSize: 14,
+  color: '#666',
+  marginBottom: 16,
+},
+resultsCountDark: {
+  color: '#999',
+},
+viewResultsButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: 'rgba(255, 163, 194, 0.1)',
+  paddingVertical: 16,
+  paddingHorizontal: 24,
+  borderRadius: 12,
+  borderWidth: 1.5,
+  borderColor: '#ffa3c2',
+  gap: 8,
+},
+viewResultsText: {
+  color: '#ffa3c2',
+  fontSize: 16,
+  fontWeight: '600',
+},
+  seeAllChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ffa3c2',
+    borderStyle: 'dashed',
   },
 });
