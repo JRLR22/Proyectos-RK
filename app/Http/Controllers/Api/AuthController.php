@@ -43,6 +43,10 @@ class AuthController extends Controller
    
 public function login(Request $request)
 {
+
+    \Log::info('📱 Login request:', $request->all());
+
+
     $request->validate([
         'email' => 'required|email',
         'password' => 'required',
@@ -51,6 +55,7 @@ public function login(Request $request)
     $user = User::where('email', $request->email)->first();
 
     if (!$user || !Hash::check($request->password, $user->password_hash)) {
+        \Log::warning('❌ Invalid credentials');
         throw ValidationException::withMessages([
             'email' => ['Las credenciales son incorrectas.'],
         ]);
@@ -61,8 +66,11 @@ public function login(Request $request)
     return response()->json([
         'user' => [
             'id' => $user->id,
-            'name' => $user->name,
+            'name' => trim($user->first_name . ' ' . $user->last_name),
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
             'email' => $user->email,
+            'phone' => $user->phone,
             'is_admin' => $user->is_admin ?? false, // Incluye el rol de admin
         ],
         'token' => $token,
