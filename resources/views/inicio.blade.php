@@ -40,13 +40,23 @@
                     <i class="fab fa-youtube text-xs md:text-sm"></i>
                 </a>
             </div>
-            <div class="hidden md:flex gap-4 items-center text-sm">
+             <div class="flex gap-4 items-center">
                 <a href="#" class="hover:underline">Contacto</a>
-                <a href="#" class="flex items-center gap-1 hover:underline">
-                    <i class="fas fa-user"></i>
-                    Mi cuenta
-                </a>
+                @if (Auth::check())
+                   <!-- Si el usuario está autenticado, muestra su nombre -->
+                    <a href="{{ route('profile') }}" class="flex items-center gap-1 hover:underline">
+                        <i class="fas fa-user"></i>
+                        {{ Auth::user()->first_name }}
+                    </a>
+                @else
+                    <!-- Si no hay sesión iniciada, muestra "Mi cuenta" -->
+                    <a href="{{ route('mi.cuenta') }}" class="flex items-center gap-1 hover:underline">
+                        <i class="fas fa-user"></i>
+                        Mi cuenta
+                    </a>
+                @endif
             </div>
+
         </div>
     </div>
 
@@ -81,7 +91,7 @@
                         <span class="absolute -top-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center">0</span>
                     </a>
 
-                    <a href="#" class="flex items-center gap-2">
+                    <a href="{{ route('cart.index') }}" class="flex items-center gap-2">
                         <div class="relative">
                             <i class="fas fa-shopping-cart text-xl md:text-2xl text-gray-700"></i>
                             <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center">0</span>

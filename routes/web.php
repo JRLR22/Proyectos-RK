@@ -45,6 +45,8 @@ Route::get('/ayuda', [PageController::class, 'ayuda'])->name('ayuda');
 Route::get('/schoolshop', [PageController::class, 'schoolShop'])->name('schoolshop');
 Route::get('/contacto', [PageController::class, 'contacto'])->name('contacto');
 Route::get('/new-releases', [PageController::class, 'newReleases'])->name('new.releases');
+Route::get('/politicas-envios', [PageController::class, 'politicasenvios'])->name('politicas.envios');
+
 
 // Rutas de libros
 Route::prefix('libros')->name('libros.')->group(function () {
@@ -56,10 +58,15 @@ Route::prefix('libros')->name('libros.')->group(function () {
 
 // Rutas de carrito y favoritos (protegidas con autenticación)
 Route::middleware(['auth'])->group(function () {
-    Route::get('/mi-compra', [CartController::class, 'miCompra'])->name('mi.compra');
-    Route::get('/favoritos', [CartController::class, 'favoritos'])->name('favoritos');
-    Route::post('/carrito/agregar', [CartController::class, 'agregar'])->name('carrito.agregar');
-    Route::delete('/carrito/eliminar/{id}', [CartController::class, 'eliminar'])->name('carrito.eliminar');
+    Route::prefix('cart')->name('cart.')->group(function () {
+        Route::get('/', [CartController::class, 'index'])->name('index');
+        Route::post('/add', [CartController::class, 'add'])->name('add');
+        Route::put('/{book_id}', [CartController::class, 'update'])->name('update');
+        Route::delete('/{book_id}', [CartController::class, 'remove'])->name('remove');
+        Route::delete('/clear/all', [CartController::class, 'clear'])->name('clear');
+        Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('applyCoupon');
+        Route::delete('/remove-coupon', [CartController::class, 'removeCoupon'])->name('removeCoupon');
+    });
 });
 
 // Ruta hacia Politicas de seguridad 
