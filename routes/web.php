@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WebAuthController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\AdminController;
 
@@ -68,6 +69,25 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/remove-coupon', [CartController::class, 'removeCoupon'])->name('removeCoupon');
     });
 });
+
+// Rutas de pago (TODAS protegidas con autenticación)
+Route::middleware(['auth'])->group(function () {
+    // Checkout
+    Route::get('/checkout', [PaymentController::class, 'showCheckout'])->name('checkout');
+    
+    // Stripe
+    Route::post('/payment/stripe/intent', [PaymentController::class, 'createStripeIntent'])->name('stripe.intent');
+    Route::post('/payment/stripe/confirm', [PaymentController::class, 'confirmStripePayment'])->name('stripe.confirm');
+    
+    // PayPal
+    Route::post('/payment/paypal/create', [PaymentController::class, 'createPayPalPayment'])->name('paypal.create');
+    Route::post('/payment/paypal/capture', [PaymentController::class, 'capturePayPalPayment'])->name('paypal.capture'); 
+    Route::get('/payment/paypal/success', [PaymentController::class, 'executePayPalPayment'])->name('paypal.success');
+    Route::get('/payment/paypal/cancel', [PaymentController::class, 'cancelPayPalPayment'])->name('paypal.cancel');
+});
+
+// Webhook de Stripe (sin middleware de autenticación)
+Route::post('/webhook/stripe', [PaymentController::class, 'handleStripeWebhook'])->name('stripe.webhook');
 
 // Ruta hacia Politicas de seguridad 
 Route::get('/proteccion-datos', function () {

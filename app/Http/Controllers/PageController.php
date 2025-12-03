@@ -194,6 +194,15 @@ class PageController extends Controller
         return view('micuenta');
     }
 
+      public function cart()
+    {
+        return view('cart');
+    }
+
+      public function politicasenvios()
+    {
+        return view('politicas-envios');
+    }
 
 
 }

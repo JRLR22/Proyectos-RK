@@ -264,9 +264,10 @@
                         </button>
                     </form>
                 </div>
-                 <button onclick="" class="bg-sky-400 hover:bg-sky-500 text-white px-6 py-3 rounded mt-4 mx-auto block text-lg font-semibold">
-                    Comprar
-                </button>
+                    <a href="{{ route('checkout') }}" 
+                    class="bg-sky-400 hover:bg-sky-500 text-white px-6 py-3 rounded mt-4 mx-auto block text-lg font-semibold text-center">
+                        Proceder al Pago
+                    </a>
             </div>
         </div>
     </main>

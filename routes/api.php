@@ -33,14 +33,12 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Rutas del carrito (requieren autenticación)
-Route::middleware('auth:sanctum')->prefix('cart')->group(function () {
+Route::prefix('cart')->group(function () {
     Route::get('/', [CartController::class, 'index']);
     Route::post('/add', [CartController::class, 'add']);
     Route::put('/{book_id}', [CartController::class, 'update']);
     Route::delete('/{book_id}', [CartController::class, 'remove']);
-    Route::post('/', [CartController::class, 'clear']);
-    
-    // Cupones
+    Route::delete('/clear/all', [CartController::class, 'clear']);
     Route::post('/apply-coupon', [CartController::class, 'applyCoupon']);
     Route::delete('/remove-coupon', [CartController::class, 'removeCoupon']);
 });

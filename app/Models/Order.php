@@ -52,13 +52,25 @@ class Order extends Model
         'total_items',
     ];
 
-    // Estados posibles
-    const STATUS_PENDING = 'pending';
-    const STATUS_PAID = 'paid';
-    const STATUS_PROCESSING = 'processing';
-    const STATUS_SHIPPED = 'shipped';
-    const STATUS_DELIVERED = 'delivered';
-    const STATUS_CANCELLED = 'cancelled';
+// Estados posibles
+const STATUS_PENDING = 'pendiente';
+const STATUS_PENDIENTE = 'pendiente'; 
+const STATUS_PROCESSING = 'procesando';
+const STATUS_PROCESANDO = 'procesando'; 
+const STATUS_CONFIRMED = 'confirmado';
+const STATUS_PAGADO = 'pagado';
+const STATUS_SHIPPED = 'enviado';
+const STATUS_ENVIADO = 'enviado'; 
+const STATUS_DELIVERED = 'entregado';
+const STATUS_ENTREGADO = 'entregado'; 
+const STATUS_CANCELLED = 'cancelado';
+const STATUS_CANCELADO = 'cancelado'; 
+
+// CONSTANTES DE PAGO
+const PAYMENT_STATUS_PENDING = 'pendiente';
+const PAYMENT_STATUS_COMPLETED = 'completado';
+const PAYMENT_STATUS_FAILED = 'fallido';
+const PAYMENT_STATUS_REFUNDED = 'reembolsado';
 
     // ==================== RELACIONES ====================
     
@@ -97,39 +109,39 @@ class Order extends Model
         return $this->hasOne(Invoice::class, 'order_id', 'order_id');
     }
 
-    // ==================== ACCESSORS ====================
     
-    public function getStatusLabelAttribute()
-    {
-        return match($this->status) {
-            self::STATUS_PENDING => 'Pendiente',
-            self::STATUS_PAID => 'Pagado',
-            self::STATUS_PROCESSING => 'En proceso',
-            self::STATUS_SHIPPED => 'Enviado',
-            self::STATUS_DELIVERED => 'Entregado',
-            self::STATUS_CANCELLED => 'Cancelado',
-            default => 'Desconocido',
-        };
-    }
+// ==================== ACCESSORS ====================
+        public function getStatusLabelAttribute()
+        {
+            return match($this->status) {
+                self::STATUS_PENDIENTE => 'Pendiente',
+                self::STATUS_PAGADO => 'Pagado',
+                self::STATUS_PROCESANDO => 'En proceso',
+                self::STATUS_ENVIADO => 'Enviado',
+                self::STATUS_ENTREGADO => 'Entregado',
+                self::STATUS_CANCELADO => 'Cancelado',
+                default => 'Desconocido',
+            };
+        }
 
-    public function getStatusColorAttribute()
-    {
-        return match($this->status) {
-            self::STATUS_PENDING => 'warning',
-            self::STATUS_PAID => 'info',
-            self::STATUS_PROCESSING => 'primary',
-            self::STATUS_SHIPPED => 'secondary',
-            self::STATUS_DELIVERED => 'success',
-            self::STATUS_CANCELLED => 'danger',
-            default => 'dark',
-        };
-    }
+        public function getStatusColorAttribute()
+        {
+            return match($this->status) {
+                self::STATUS_PENDIENTE => 'warning',
+                self::STATUS_PAGADO => 'info',
+                self::STATUS_PROCESANDO => 'primary',
+                self::STATUS_ENVIADO => 'secondary',
+                self::STATUS_ENTREGADO => 'success',
+                self::STATUS_CANCELADO => 'danger',
+                default => 'dark',
+            };
+        }
 
     public function getCanBeCancelledAttribute()
     {
         return in_array($this->status, [
-            self::STATUS_PENDING,
-            self::STATUS_PAID,
+            self::STATUS_PENDIENTE,
+            self::STATUS_PAGADO,
         ]);
     }
 
@@ -147,32 +159,32 @@ class Order extends Model
 
     public function scopePending($query)
     {
-        return $query->where('status', self::STATUS_PENDING);
+        return $query->where('status', self::STATUS_PENDIENTE);
     }
 
     public function scopePaid($query)
     {
-        return $query->where('status', self::STATUS_PAID);
+        return $query->where('status', self::STATUS_PAGADO);
     }
 
     public function scopeProcessing($query)
     {
-        return $query->where('status', self::STATUS_PROCESSING);
+        return $query->where('status', self::STATUS_PROCESANDO);
     }
 
     public function scopeShipped($query)
     {
-        return $query->where('status', self::STATUS_SHIPPED);
+        return $query->where('status', self::STATUS_ENVIADO);
     }
 
     public function scopeDelivered($query)
     {
-        return $query->where('status', self::STATUS_DELIVERED);
+        return $query->where('status', self::STATUS_ENTREGADO);
     }
 
     public function scopeCancelled($query)
     {
-        return $query->where('status', self::STATUS_CANCELLED);
+        return $query->where('status', self::STATUS_CANCELADO);
     }
 
     public function scopeForUser($query, $userId)
@@ -243,7 +255,7 @@ class Order extends Model
     public function markAsPaid()
     {
         $this->update([
-            'status' => self::STATUS_PAID,
+            'status' => self::STATUS_PAGADO,
             'payment_status' => 'completed',
         ]);
 
@@ -268,7 +280,7 @@ class Order extends Model
     public function markAsShipped($trackingNumber = null)
     {
         $this->update([
-            'status' => self::STATUS_SHIPPED,
+            'status' => self::STATUS_ENVIADO,
             'tracking_number' => $trackingNumber,
             'shipped_at' => Carbon::now(),
         ]);
@@ -280,7 +292,7 @@ class Order extends Model
     public function markAsDelivered()
     {
         $this->update([
-            'status' => self::STATUS_DELIVERED,
+            'status' => self::STATUS_ENTREGADO,
             'delivered_at' => Carbon::now(),
         ]);
     }
@@ -295,13 +307,13 @@ class Order extends Model
         }
 
         $this->update([
-            'status' => self::STATUS_CANCELLED,
+            'status' => self::STATUS_CANCELADO,
             'cancelled_at' => Carbon::now(),
             'cancellation_reason' => $reason,
         ]);
 
         // Restaurar inventario si ya se había reducido
-        if (in_array($this->status, [self::STATUS_PAID, self::STATUS_PROCESSING])) {
+        if (in_array($this->status, [self::STATUS_PAGADO, self::STATUS_PROCESANDO])) {
             foreach ($this->items as $item) {
                 $item->book->increment('stock_quantity', $item->quantity);
                 $item->book->decrement('sales_count', $item->quantity);
