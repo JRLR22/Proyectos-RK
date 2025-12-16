@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Web;
 
 use App\Models\Payment;
 use App\Models\Order;
 use App\Models\Cart;
+use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -136,6 +137,9 @@ class PaymentController extends Controller
                 $order->status = 'procesando';
                 $order->payment_status = 'completado';
                 $order->save();
+                
+                // GENERAR FACTURA AUTOMÁTICAMENTE
+                $this->generateInvoice($order);
 
                 // Limpiar carrito
                 $cart = Cart::forUser(Auth::id())->first();
@@ -192,246 +196,232 @@ class PaymentController extends Controller
         throw new \Exception('Error obteniendo token de PayPal: ' . $response->body());
     }
 
-public function createPayPalPayment(Request $request)
-{
-    $request->validate([
-        'order_id' => 'required|exists:orders,order_id',
-    ]);
-
-    $order = Order::with('items.book')
-        ->where('order_id', $request->order_id)
-        ->where('user_id', Auth::id())
-        ->firstOrFail();
-
-    try {
-        $accessToken = $this->getPayPalAccessToken();
-        $mode = config('services.paypal.mode');
-        
-        $url = $mode === 'sandbox'
-            ? 'https://api-m.sandbox.paypal.com/v2/checkout/orders'
-            : 'https://api-m.paypal.com/v2/checkout/orders';
-
- 
-        $amount = number_format((float)$order->total, 2, '.', '');
-
-        // Log para debug
-        Log::info('PayPal Order Data:', [
-            'order_id' => $order->order_id,
-            'amount' => $amount,
-            'currency' => 'MXN'
+    public function createPayPalPayment(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|exists:orders,order_id',
         ]);
 
-        // Crear orden en PayPal
-        $response = Http::withToken($accessToken)
-            ->withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ])
-            ->post($url, [
-                'intent' => 'CAPTURE',
-                'purchase_units' => [
-                    [
-                        'reference_id' => (string)$order->order_number,
-                        'description' => 'Pedido Librerías Gonvill #' . $order->order_number,
-                        'amount' => [
-                            'currency_code' => 'MXN',
-                            'value' => $amount  // ⬅️ DEBE ser string con formato "123.45"
+        $order = Order::with('items.book')
+            ->where('order_id', $request->order_id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        try {
+            $accessToken = $this->getPayPalAccessToken();
+            $mode = config('services.paypal.mode');
+            
+            $url = $mode === 'sandbox'
+                ? 'https://api-m.sandbox.paypal.com/v2/checkout/orders'
+                : 'https://api-m.paypal.com/v2/checkout/orders';
+
+            $amount = number_format((float)$order->total, 2, '.', '');
+
+            Log::info('PayPal Order Data:', [
+                'order_id' => $order->order_id,
+                'amount' => $amount,
+                'currency' => 'MXN'
+            ]);
+
+            $response = Http::withToken($accessToken)
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])
+                ->post($url, [
+                    'intent' => 'CAPTURE',
+                    'purchase_units' => [
+                        [
+                            'reference_id' => (string)$order->order_number,
+                            'description' => 'Pedido Librerías Gonvill #' . $order->order_number,
+                            'amount' => [
+                                'currency_code' => 'MXN',
+                                'value' => $amount
+                            ]
                         ]
+                    ],
+                    'application_context' => [
+                        'brand_name' => 'Librerías Gonvill',
+                        'locale' => 'es-MX',
+                        'landing_page' => 'BILLING',
+                        'shipping_preference' => 'NO_SHIPPING',
+                        'user_action' => 'PAY_NOW',
+                        'return_url' => route('paypal.success'),
+                        'cancel_url' => route('paypal.cancel')
                     ]
-                ],
-                'application_context' => [
-                    'brand_name' => 'Librerías Gonvill',
-                    'locale' => 'es-MX',
-                    'landing_page' => 'BILLING',
-                    'shipping_preference' => 'NO_SHIPPING',
-                    'user_action' => 'PAY_NOW',
-                    'return_url' => route('paypal.success'),
-                    'cancel_url' => route('paypal.cancel')
-                ]
-            ]);
+                ]);
 
-        // Log de respuesta para debug
-        Log::info('PayPal API Response:', [
-            'status' => $response->status(),
-            'body' => $response->json()
-        ]);
-
-        if (!$response->successful()) {
-            Log::error('PayPal API Error:', [
+            Log::info('PayPal API Response:', [
                 'status' => $response->status(),
-                'body' => $response->body(),
-                'headers' => $response->headers()
+                'body' => $response->json()
             ]);
-            throw new \Exception('Error al crear orden en PayPal: ' . $response->body());
-        }
 
-        $paypalData = $response->json();
+            if (!$response->successful()) {
+                Log::error('PayPal API Error:', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'headers' => $response->headers()
+                ]);
+                throw new \Exception('Error al crear orden en PayPal: ' . $response->body());
+            }
 
-        // Guardar registro de pago
-        $payment = Payment::create([
-            'order_id' => $order->order_id,
-            'payment_method' => Payment::METHOD_PAYPAL,
-            'status' => Payment::STATUS_PENDING,
-            'amount' => $order->total,
-            'currency' => 'MXN',
-            'paypal_order_id' => $paypalData['id'],
-            'payment_details' => $paypalData
-        ]);
+            $paypalData = $response->json();
 
-        // Obtener URL de aprobación
-        $approvalUrl = collect($paypalData['links'])
-            ->firstWhere('rel', 'approve')['href'] ?? null;
-
-        if (!$approvalUrl) {
-            throw new \Exception('No se pudo obtener la URL de aprobación de PayPal');
-        }
-
-        return response()->json([
-            'success' => true,
-            'approval_url' => $approvalUrl,
-            'payment_id' => $payment->payment_id,
-            'paypal_order_id' => $paypalData['id']
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error creando pago PayPal:', [
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Error al crear el pago de PayPal: ' . $e->getMessage(),
-        ], 500);
-    }
-}
-
-public function capturePayPalPayment(Request $request)
-{
-    $request->validate([
-        'paypal_order_id' => 'required|string',
-    ]);
-
-    try {
-        $paypalOrderId = $request->paypal_order_id;
-        
-        Log::info('=== INICIANDO CAPTURA PAYPAL ===');
-        Log::info('PayPal Order ID: ' . $paypalOrderId);
-
-        $accessToken = $this->getPayPalAccessToken();
-        $mode = config('services.paypal.mode');
-        
-        $url = $mode === 'sandbox'
-            ? "https://api-m.sandbox.paypal.com/v2/checkout/orders/{$paypalOrderId}/capture"
-            : "https://api-m.paypal.com/v2/checkout/orders/{$paypalOrderId}/capture";
-
-        Log::info('URL de captura: ' . $url);
-
-       
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, ''); // Body vacío
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $accessToken,
-        ]);
-
-        $responseBody = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        Log::info('Respuesta HTTP Code: ' . $httpCode);
-        Log::info('Respuesta Body: ' . $responseBody);
-
-        if ($httpCode !== 201 && $httpCode !== 200) {
-            throw new \Exception('PayPal capture falló (HTTP ' . $httpCode . '): ' . $responseBody);
-        }
-
-        $captureData = json_decode($responseBody, true);
-
-        if (!$captureData || !isset($captureData['status'])) {
-            throw new \Exception('Respuesta inválida de PayPal');
-        }
-
-        Log::info('Estado de captura: ' . $captureData['status']);
-
-        if ($captureData['status'] === 'COMPLETED') {
-            $payment = Payment::where('paypal_order_id', $paypalOrderId)->firstOrFail();
-            
-            // Actualizar detalles del pago
-            $payment->update([
-                'payment_details' => array_merge(
-                    $payment->payment_details ?? [],
-                    ['capture' => $captureData]
-                )
+            $payment = Payment::create([
+                'order_id' => $order->order_id,
+                'payment_method' => Payment::METHOD_PAYPAL,
+                'status' => Payment::STATUS_PENDING,
+                'amount' => $order->total,
+                'currency' => 'MXN',
+                'paypal_order_id' => $paypalData['id'],
+                'payment_details' => $paypalData
             ]);
-            
-            // Marcar como completado
-            $payment->markAsCompleted();
 
-            // Actualizar orden
-            $order = Order::find($payment->order_id);
-            $order->status = 'procesando';
-            $order->payment_status = 'completado';
-            $order->save();
+            $approvalUrl = collect($paypalData['links'])
+                ->firstWhere('rel', 'approve')['href'] ?? null;
 
-            Log::info('=== PAGO COMPLETADO EXITOSAMENTE ===');
-            Log::info('Payment ID: ' . $payment->payment_id);
-            Log::info('Order ID: ' . $order->order_id);
-
-            // Limpiar carrito
-            $cart = Cart::forUser(Auth::id())->first();
-            if ($cart) {
-                $cart->clear();
+            if (!$approvalUrl) {
+                throw new \Exception('No se pudo obtener la URL de aprobación de PayPal');
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pago completado exitosamente',
-                'order_id' => $payment->order_id,
+                'approval_url' => $approvalUrl,
+                'payment_id' => $payment->payment_id,
+                'paypal_order_id' => $paypalData['id']
             ]);
-        } else {
-            $payment = Payment::where('paypal_order_id', $paypalOrderId)->first();
-            if ($payment) {
-                $payment->markAsFailed('PayPal status: ' . $captureData['status']);
-            }
+
+        } catch (\Exception $e) {
+            Log::error('Error creando pago PayPal:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'El pago no se completó. Estado: ' . $captureData['status'],
-            ], 400);
+                'message' => 'Error al crear el pago de PayPal: ' . $e->getMessage(),
+            ], 500);
         }
-
-    } catch (\Exception $e) {
-        Log::error('=== ERROR EN CAPTURA PAYPAL ===');
-        Log::error('Mensaje: ' . $e->getMessage());
-        Log::error('Trace: ' . $e->getTraceAsString());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Error al procesar el pago: ' . $e->getMessage(),
-        ], 500);
     }
-}
 
-/**
- * Éxito de PayPal (redirección)
- */
-public function executePayPalPayment(Request $request)
-{
-    return redirect()->route('profile')
-        ->with('success', 'Procesando tu pago de PayPal...');
-}
+    public function capturePayPalPayment(Request $request)
+    {
+        $request->validate([
+            'paypal_order_id' => 'required|string',
+        ]);
 
-/**
- * Cancelar pago de PayPal
- */
-public function cancelPayPalPayment(Request $request)
-{
-    return redirect()->route('cart.index')
-        ->with('error', 'Has cancelado el pago de PayPal');
-}
+        try {
+            $paypalOrderId = $request->paypal_order_id;
+            
+            Log::info('=== INICIANDO CAPTURA PAYPAL ===');
+            Log::info('PayPal Order ID: ' . $paypalOrderId);
+
+            $accessToken = $this->getPayPalAccessToken();
+            $mode = config('services.paypal.mode');
+            
+            $url = $mode === 'sandbox'
+                ? "https://api-m.sandbox.paypal.com/v2/checkout/orders/{$paypalOrderId}/capture"
+                : "https://api-m.paypal.com/v2/checkout/orders/{$paypalOrderId}/capture";
+
+            Log::info('URL de captura: ' . $url);
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, '');
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $accessToken,
+            ]);
+
+            $responseBody = curl_exec($ch);
+            $httpCode = curl_getInfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            Log::info('Respuesta HTTP Code: ' . $httpCode);
+            Log::info('Respuesta Body: ' . $responseBody);
+
+            if ($httpCode !== 201 && $httpCode !== 200) {
+                throw new \Exception('PayPal capture falló (HTTP ' . $httpCode . '): ' . $responseBody);
+            }
+
+            $captureData = json_decode($responseBody, true);
+
+            if (!$captureData || !isset($captureData['status'])) {
+                throw new \Exception('Respuesta inválida de PayPal');
+            }
+
+            Log::info('Estado de captura: ' . $captureData['status']);
+
+            if ($captureData['status'] === 'COMPLETED') {
+                $payment = Payment::where('paypal_order_id', $paypalOrderId)->firstOrFail();
+                
+                $payment->update([
+                    'payment_details' => array_merge(
+                        $payment->payment_details ?? [],
+                        ['capture' => $captureData]
+                    )
+                ]);
+                
+                $payment->markAsCompleted();
+
+                $order = Order::find($payment->order_id);
+                $order->status = 'procesando';
+                $order->payment_status = 'completado';
+                $order->save();
+
+                // GENERAR FACTURA AUTOMÁTICAMENTE
+                $this->generateInvoice($order);
+
+                Log::info('=== PAGO COMPLETADO EXITOSAMENTE ===');
+                Log::info('Payment ID: ' . $payment->payment_id);
+                Log::info('Order ID: ' . $order->order_id);
+
+                $cart = Cart::forUser(Auth::id())->first();
+                if ($cart) {
+                    $cart->clear();
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pago completado exitosamente',
+                    'order_id' => $payment->order_id,
+                ]);
+            } else {
+                $payment = Payment::where('paypal_order_id', $paypalOrderId)->first();
+                if ($payment) {
+                    $payment->markAsFailed('PayPal status: ' . $captureData['status']);
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El pago no se completó. Estado: ' . $captureData['status'],
+                ], 400);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('=== ERROR EN CAPTURA PAYPAL ===');
+            Log::error('Mensaje: ' . $e->getMessage());
+            Log::error('Trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al procesar el pago: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function executePayPalPayment(Request $request)
+    {
+        return redirect()->route('profile')
+            ->with('success', 'Procesando tu pago de PayPal...');
+    }
+
+    public function cancelPayPalPayment(Request $request)
+    {
+        return redirect()->route('cart.index')
+            ->with('error', 'Has cancelado el pago de PayPal');
+    }
 
     // ==================== WEBHOOK DE STRIPE ====================
 
@@ -456,6 +446,16 @@ public function cancelPayPalPayment(Request $request)
                     
                     if ($payment && $payment->status === Payment::STATUS_PENDING) {
                         $payment->markAsCompleted();
+                        
+                        $order = Order::find($payment->order_id);
+                        if ($order) {
+                            $order->status = 'procesando';
+                            $order->payment_status = 'completado';
+                            $order->save();
+                            
+                            // GENERAR FACTURA AUTOMÁTICAMENTE
+                            $this->generateInvoice($order);
+                        }
                     }
                     break;
 
@@ -550,5 +550,36 @@ public function cancelPayPalPayment(Request $request)
             'items' => $items,
             'summary' => $summary,
         ];
+    }
+
+    /**
+     * Generar factura automáticamente para una orden pagada
+     */
+    private function generateInvoice($order)
+    {
+        try {
+            // Verificar que no exista ya una factura
+            if ($order->invoice) {
+                Log::info('La orden ya tiene factura generada: ' . $order->order_number);
+                return;
+            }
+
+            // Generar número de factura único
+            $invoiceNumber = 'INV-' . now()->format('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
+            
+            $invoice = Invoice::create([
+                'order_id' => $order->order_id,
+                'invoice_number' => $invoiceNumber,
+                'subtotal' => $order->subtotal,
+                'tax' => $order->tax_amount ?? 0,
+                'total' => $order->total,
+                'issue_date' => now(),
+            ]);
+
+            Log::info('Factura generada automáticamente: ' . $invoiceNumber . ' para orden #' . $order->order_number);
+            
+        } catch (\Exception $e) {
+            Log::error('Error generando factura automática: ' . $e->getMessage());
+        }
     }
 }

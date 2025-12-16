@@ -80,16 +80,27 @@
                     <a href="#" class="text-sm text-gray-600 mt-1 inline-block">› Búsqueda avanzada</a>
                 </div>
                 <div class="flex items-center gap-4">
-                    <a href="#" class="relative">
-                        <i class="far fa-heart text-2xl text-gray-700"></i>
-                        <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                    <a href="{{ route('wishlist.index') }}" class="relative hidden sm:block">
+                        <i class="far fa-heart text-xl md:text-2xl text-gray-700 hover:text-red-500"></i>
+                        <span class="absolute -top-3 -left-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center">
+                            {{ Auth::check() ? Auth::user()->wishlist()->count() : 0 }}
+                        </span>
                     </a>
                     <a href="{{ route('cart.index') }}" class="flex items-center gap-2">
                         <div class="relative">
-                            <i class="fas fa-shopping-cart text-2xl text-gray-800"></i>
-                        </div>
-                        <span id="cart-count" class="absolute -top-2 -right-2 bg-[#ffa3c2] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
-                        <span class="text-gray-700">Mi compra</span>
+                            <i class="fas fa-shopping-cart text-xl md:text-2xl text-gray-700 hover:text-red-500"></i>
+                         <span class="absolute -top-4 -left-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center">
+                                @auth
+                                    @php
+                                        $cart = \App\Models\Cart::where('user_id', Auth::id())->first();
+                                        $itemsCount = $cart ? $cart->items()->sum('quantity') : 0;
+                                    @endphp
+                                    {{ $itemsCount }}
+                                @else
+                                    0
+                                @endauth
+                            </span>
+                        <span class="hidden sm:inline text-gray-700 text-sm">Mi compra</span>
                     </a>
                 </div>
             </div>
@@ -188,6 +199,14 @@
                         Añadir <i class="fas fa-shopping-cart"></i>
                     </button>
                 </form>
+
+                <form action="{{ route('wishlist.add', $book->book_id) }}" method="POST">
+        @csrf
+                    <button type="submit" class="bg-pink-600 text-white px-4 py-2 mt-2 rounded hover:bg-pink-700">
+                        Agregar a Wishlist ❤️
+                    </button>
+                </form>
+
 
             </div>
         @endforeach

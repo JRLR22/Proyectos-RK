@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Web\AddressController;
 use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\ReviewController;
@@ -44,24 +44,22 @@ Route::prefix('cart')->group(function () {
 });
 
 // Rutas de órdenes (requieren autenticación)
-Route::middleware('auth:sanctum')->prefix('orders')->group(function () {
-    Route::get('/', [OrderController::class, 'index']);
-    Route::post('/', [OrderController::class, 'store']);
-    Route::post('/preview', [OrderController::class, 'preview']);
-    Route::get('/{id}', [OrderController::class, 'show']);
-    Route::put('/{id}/cancel', [OrderController::class, 'cancel']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/orders', [Api\OrderController::class, 'index']);
+    Route::get('/orders/{id}', [Api\OrderController::class, 'show']);
+    Route::post('/orders', [Api\OrderController::class, 'store']);
+    Route::put('/orders/{id}/cancel', [Api\OrderController::class, 'cancel']);
 });
 
 // Rutas de direcciones (requieren autenticación)
-Route::middleware('auth:sanctum')->prefix('addresses')->group(function () {
-    Route::get('/', [AddressController::class, 'index']);
-    Route::get('/default', [AddressController::class, 'getDefault']);
-    Route::post('/', [AddressController::class, 'store']);
-    Route::get('/{id}', [AddressController::class, 'show']);
-    Route::put('/{id}', [AddressController::class, 'update']);
-    Route::delete('/{id}', [AddressController::class, 'destroy']);
-    Route::put('/{id}/set-default', [AddressController::class, 'setDefault']);
-    Route::get('/{id}/validate', [AddressController::class, 'validate']);
+Route::middleware('auth:web')->group(function () {
+    Route::get('/addresses', [AddressController::class, 'index']);
+    Route::get('/addresses/{id}', [AddressController::class, 'show']);
+    Route::post('/addresses', [AddressController::class, 'store']);
+    Route::put('/addresses/{id}', [AddressController::class, 'update']);
+    Route::delete('/addresses/{id}', [AddressController::class, 'destroy']);
+    Route::put('/addresses/{id}/set-default', [AddressController::class, 'setDefault']);
+    Route::get('/addresses/default', [AddressController::class, 'getDefault']);
 });
 
 // Rutas de métodos de envío (requieren autenticación)

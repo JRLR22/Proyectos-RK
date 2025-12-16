@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Web;
 
 use App\Models\Wishlist;
 use App\Models\Book;
@@ -17,34 +17,26 @@ class WishlistController extends Controller
     {
         $user = Auth::user();
         
-        $wishlist = Wishlist::with(['book.authors', 'book.category'])
+        $wishlistData = Wishlist::with(['book.authors', 'book.category'])
                             ->where('user_id', $user->user_id)
                             ->orderBy('created_at', 'desc')
                             ->get();
 
-        return response()->json([
-            'success' => true,
-            'wishlist' => $wishlist->map(function ($item) {
-                return [
-                    'wishlist_id' => $item->wishlist_id,
-                    'book' => [
-                        'book_id' => $item->book->book_id,
-                        'title' => $item->book->title,
-                        'subtitle' => $item->book->subtitle,
-                        'authors' => $item->book->authors_list,
-                        'cover_url' => $item->book->cover_url,
-                        'price' => $item->book->price,
-                        'discount_percentage' => $item->book->discount_percentage,
-                        'discounted_price' => $item->book->discounted_price,
-                        'in_stock' => $item->book->in_stock,
-                        'stock_quantity' => $item->book->stock_quantity,
-                        'category' => $item->book->category->name ?? null,
-                    ],
-                    'added_at' => $item->created_at->format('d/m/Y H:i'),
-                ];
-            }),
-            'total_items' => $wishlist->count(),
-        ]);
+        $wishlist = $wishlistData->map(function ($item) {
+            return [
+                'wishlist_id' => $item->wishlist_id,
+                'book' => [
+                    'book_id' => $item->book->book_id,
+                    'title' => $item->book->title,
+                    'authors' => $item->book->authors_list,
+                    'cover_url' => $item->book->cover_url,
+                    'price' => $item->book->price,
+                    'discounted_price' => $item->book->discounted_price,
+                ],
+            ];
+        });
+
+        return view('wishlist', compact('wishlist'));
     }
 
     /**
@@ -54,56 +46,38 @@ class WishlistController extends Controller
     public function add($bookId)
     {
         $user = Auth::user();
-
-        // Verificar que el libro existe
         $book = Book::findOrFail($bookId);
 
-        // Verificar si ya está en wishlist
         $exists = Wishlist::where('user_id', $user->user_id)
-                          ->where('book_id', $bookId)
-                          ->exists();
+                        ->where('book_id', $bookId)
+                        ->exists();
 
         if ($exists) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Este libro ya está en tu lista de deseos',
-            ], 400);
+            return back()->with('error', 'Este libro ya está en tu lista de deseos');
         }
 
-        // Agregar a wishlist
-        $wishlistItem = Wishlist::create([
+        Wishlist::create([
             'user_id' => $user->user_id,
             'book_id' => $bookId,
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Libro agregado a tu lista de deseos',
-            'wishlist_item' => [
-                'wishlist_id' => $wishlistItem->wishlist_id,
-                'book_id' => $book->book_id,
-                'title' => $book->title,
-            ],
-        ], 201);
+        return back()->with('success', '¡Libro agregado a tu lista de deseos! ❤️');
     }
 
-    /**
-     * Eliminar libro de wishlist
-     * DELETE /api/wishlist/{id}
+        /**
+     * Remover libro a wishlist
+     * POST /api/wishlist/remove/{book_id}
      */
+
     public function remove($id)
     {
         $user = Auth::user();
+        
+        Wishlist::where('user_id', $user->user_id)
+                ->where('wishlist_id', $id)
+                ->delete();
 
-        $wishlistItem = Wishlist::where('user_id', $user->user_id)
-                                ->findOrFail($id);
-
-        $wishlistItem->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Libro eliminado de tu lista de deseos',
-        ]);
+        return redirect()->route('wishlist.index')->with('success', 'Libro eliminado de tu lista');
     }
 
     /**

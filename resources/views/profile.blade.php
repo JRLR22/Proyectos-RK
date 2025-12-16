@@ -1,537 +1,983 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Perfil - Gonvill</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+@extends('layouts.app')
 
-    <style>
-        .profile-card {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        .profile-header {
-            background: linear-gradient(135deg, #ffa3c2 0%, #ff7eb8 100%);
-            color: white;
-            padding: 40px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-        }
-
-        .menu-item {
-            padding: 15px 20px;
-            border-radius: 8px;
-            transition: all 0.3s;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border: 2px solid transparent;
-        }
-
-        .menu-item:hover {
-            background: #fff5f9;
-            border-color: #ffa3c2;
-        }
-
-        .menu-item.active {
-            background: #fff5f9;
-            border-color: #ffa3c2;
-            font-weight: 600;
-        }
-
-        .info-row {
-            display: flex;
-            padding: 15px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #666;
-            width: 150px;
-        }
-
-        .info-value {
-            color: #1a1a1a;
-            flex: 1;
-        }
-
-        .btn-primary {
-            background: #ffa3c2;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-        }
-
-        .btn-primary:hover {
-            background: #ff7aa5;
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #ffa3c2;
-            padding: 12px 24px;
-            border-radius: 8px;
-            border: 2px solid #ffa3c2;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-        }
-
-        .btn-secondary:hover {
-            background: #fff5f9;
-        }
-
-        .btn-danger {
-            background: #f44336;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-        }
-
-        .btn-danger:hover {
-            background: #d32f2f;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .empty-state i {
-            font-size: 64px;
-            margin-bottom: 20px;
-            color: #ddd;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .badge-success {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .badge-warning {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-
-        .badge-info {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-    </style>
-</head>
-<body class="bg-gray-50">
-
-    <!-- Header Superior -->
-    <div class="bg-[#ffa3c2] text-white py-2 sticky top-0 z-[100]">
-        <div class="container mx-auto px-4 flex justify-between items-center">
-            <div class="flex gap-3">
-                <a href="#" class="bg-blue-700 rounded-full w-8 h-8 flex items-center justify-center hover:bg-blue-800">
-                    <i class="fab fa-facebook-f text-sm"></i>
-                </a>
-                <a href="#" class="bg-sky-400 rounded-full w-8 h-8 flex items-center justify-center hover:bg-sky-500">
-                    <i class="fab fa-twitter text-sm"></i>
-                </a>
-                <a href="#" class="bg-pink-600 rounded-full w-8 h-8 flex items-center justify-center hover:bg-pink-700">
-                    <i class="fab fa-instagram text-sm"></i>
-                </a>
-                <a href="#" class="bg-red-600 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700">
-                    <i class="fab fa-youtube text-sm"></i>
-                </a>
+@section('content')
+<div class="bg-gray-50 min-h-screen py-8">
+    <div class="container mx-auto px-4">
+        <!-- Header del perfil -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-blue-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold">
+                        {{ strtoupper(substr(Auth::user()->first_name, 0, 1)) }}{{ strtoupper(substr(Auth::user()->last_name, 0, 1)) }}
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">{{ Auth::user()->full_name }}</h1>
+                        <p class="text-gray-600">{{ Auth::user()->email }}</p>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Miembro desde {{ Auth::user()->created_at->locale('es')->isoFormat('MMMM YYYY') }}
+                        </p>
+                    </div>
+                </div>
+                <button onclick="openTab(event, 'configuracion')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Configuración
+                </button>
             </div>
-             <div class="flex gap-4 items-center">
-                <a href="#" class="hover:underline">Contacto</a>
-                @if (Auth::check())
-                    {{-- Si el usuario está autenticado, muestra su nombre --}}
-                    <a href="{{ route('profile') }}" class="flex items-center gap-1 hover:underline">
-                        <i class="fas fa-user"></i>
-                        {{ Auth::user()->first_name }}
-                    </a>
-                @else
-                    {{-- Si no hay sesión iniciada, muestra "Mi cuenta" --}}
-                    <a href="{{ route('mi.cuenta') }}" class="flex items-center gap-1 hover:underline">
-                        <i class="fas fa-user"></i>
-                        Mi cuenta
-                    </a>
+        </div>
+
+        @if(session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                {{ session('error') }}
+            </div>
+        @endif
+
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Sidebar de navegación -->
+            <div class="lg:w-1/4">
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <nav class="space-y-2">
+                        <button onclick="openTab(event, 'pedidos')" class="tab-button w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 flex items-center active bg-blue-50 text-blue-600 font-semibold">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                            </svg>
+                            Mis Pedidos
+                        </button>
+                        
+                        <button onclick="openTab(event, 'direcciones')" class="tab-button w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 flex items-center">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            Mis Direcciones
+                        </button>
+                        
+                        <button onclick="openTab(event, 'facturas')" class="tab-button w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 flex items-center">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Facturas
+                        </button>
+                        
+                        <button onclick="openTab(event, 'configuracion')" class="tab-button w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 flex items-center">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            Configuración
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Contenido principal -->
+            <div class="lg:w-3/4">
+                <!-- Tab: Mis Pedidos -->
+                <div id="pedidos-tab" class="tab-content bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold mb-6">Mis Pedidos</h2>
+<div class="space-y-4">
+    @forelse($orders as $order)
+        <div class="border rounded-lg p-6 hover:shadow-lg transition-shadow">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="font-bold text-lg">{{ $order->order_number }}</h3>
+                    <p class="text-sm text-gray-600">
+                        {{ $order->created_at->format('d/m/Y H:i') }}
+                    </p>
+                </div>
+
+                <span class="px-3 py-1 rounded-full text-sm font-semibold
+                    bg-{{ $order->status_color }}-100
+                    text-{{ $order->status_color }}-800">
+                    {{ $order->status_label }}
+                </span>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-sm text-gray-600">
+                        {{ $order->total_items }} artículo(s)
+                    </p>
+                    <p class="text-xl font-bold text-gray-900">
+                        ${{ number_format($order->total, 2) }}
+                    </p>
+                </div>
+
+                <a href="{{ route('orders.show', $order->order_id) }}"
+   class="text-blue-600 hover:underline">
+   Ver detalle
+</a>
+
+                @if($order->can_be_cancelled)
+                    <form method="POST" action="{{ route('orders.cancel', $order->order_id) }}">
+                        @csrf
+                        @method('PUT')
+                        <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                            Cancelar
+                        </button>
+                    </form>
                 @endif
             </div>
         </div>
-    </div>
-
-    <!-- Header Principal -->
-    <div class="bg-white shadow-md py-4 sticky top-10 z-[99]">
-        <div class="container mx-auto px-4">
-            <div class="flex items-center justify-between gap-4">
-                <!-- Logo -->
-                <div>
-                    <a href="{{ route('inicio') }}">
-                        <img src="{{ asset('img/logo_Gonvill_pink.png') }}" alt="Gonvill Librerías" class="h-20">
-                    </a>
+    @empty
+        <div class="text-center py-12">
+            <h3 class="text-xl font-semibold text-gray-700 mb-2">
+                No tienes pedidos
+            </h3>
+            <a href="{{ route('inicio') }}"
+               class="inline-block bg-blue-600 text-white px-6 py-2 rounded">
+                Explorar Libros
+            </a>
+        </div>
+    @endforelse
+</div>
                 </div>
-                
-                <!-- Buscador -->
-                <div class="flex-1 max-w-2xl">
-                    <div class="flex">
-                        <input type="text" placeholder="Título, Autor, ISBN, Código Gonvill" 
-                               class="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-sky-500">
-                        <button class="bg-[#ffa3c2] hover:bg-[#FF82AE] text-white px-6">
-                            <i class="fas fa-search"></i>
+
+
+                <!-- Tab: Mis Direcciones -->
+                <div id="direcciones-tab" class="tab-content bg-white rounded-lg shadow-md p-6 hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Mis Direcciones</h2>
+                        <button onclick="openAddressModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Agregar Dirección
                         </button>
                     </div>
-                    <a href="#" class="text-sm text-gray-600 mt-1 inline-block">› Búsqueda avanzada</a>
-                </div>
-
-                <!-- Carrito -->
-                <div class="flex items-center gap-4">
-                    <a href="#" class="relative">
-                        <i class="far fa-heart text-2xl text-gray-700"></i>
-                        <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
-                    </a>
-                    <a href="{{ route('cart.index') }}" class="flex items-center gap-2">
-                        <div class="relative">
-                            <i class="fas fa-shopping-cart text-2xl text-gray-800"></i>
+                    <div id="direcciones-container">
+                        <div class="text-center py-12">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                            <p class="text-gray-500">Cargando direcciones...</p>
                         </div>
-                        <span class="text-gray-700">Mi compra</span>
-                    </a>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Menú de Navegación -->
-    <nav class="bg-white border-t border-b border-gray-200 sticky top-32 z-[98]">
-        <div class="container mx-auto px-4">
-            <ul class="flex gap-8 py-4 justify-center">
-                <li><a href="{{ route('inicio') }}" class="text-[#DB7B9E] hover:text-[#ED4585] font-medium px-2 py-1">Inicio</a></li>
-                <li><a href="#" class="text-[#DB7B9E] hover:text-[#ED4585] font-medium px-2 py-1">Libros ▾</a></li>
-                <li><a href="{{ route('impresion.demanda') }}" class="text-[#DB7B9E] hover:text-[#ED4585] font-medium px-2 py-1">Impresión bajo demanda</a></li>
-                <li><a href="{{ route('sobre.nosotros') }}" class="text-[#DB7B9E] hover:text-[#ED4585] font-medium px-2 py-1">Sobre Nosotros</a></li>
-                <li><a href="{{ route('nuestras.librerias') }}" class="text-[#DB7B9E] hover:text-[#ED4585] font-medium px-2 py-1">Nuestras librerías</a></li>
-                <li><a href="{{ route('bolsa.trabajo') }}" class="text-[#DB7B9E] hover:text-[#ED4585] font-medium px-2 py-1">Bolsa de trabajo</a></li>
-                <li><a href="{{ route('ayuda') }}" class="text-[#DB7B9E] hover:text-[#ED4585] font-medium px-2 py-1">Ayuda</a></li>
-                <li><a href="{{ route('schoolshop') }}" class="text-[#DB7B9E] hover:text-[#ED4585] font-medium px-2 py-1">SchoolShop</a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <!-- Contenido Principal -->
-    <div class="container mx-auto px-4 py-8">
-        <!-- Header del Perfil -->
-        <div class="profile-header">
-            <div class="flex items-center gap-6">
-                <div class="bg-white text-[#ffa3c2] rounded-full w-24 h-24 flex items-center justify-center text-4xl font-bold">
-                    {{ strtoupper(substr(Auth::user()->first_name, 0, 1)) }}{{ strtoupper(substr(Auth::user()->last_name, 0, 1)) }}
+                <!-- Tab: Facturas -->
+                <div id="facturas-tab" class="tab-content bg-white rounded-lg shadow-md p-6 hidden">
+                    <h2 class="text-2xl font-bold mb-6">Mis Facturas</h2>
+                    <div id="facturas-container">
+                        <div class="text-center py-12">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                            <p class="text-gray-500">Cargando facturas...</p>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-3xl font-bold mb-2">{{ Auth::user()->first_name }} {{ Auth::user()->last_name }}</h1>
-                    <p class="opacity-90">{{ Auth::user()->email }}</p>
-                    <p class="text-sm opacity-75 mt-2">Miembro desde {{ Auth::user()->created_at->format('d/m/Y') }}</p>
-                </div>
-            </div>
-        </div>
 
-        <div class="grid grid-cols-12 gap-6">
-            <!-- Menú Lateral -->
-            <div class="col-span-3">
-                <div class="profile-card">
-                    <div class="menu-item active" data-section="info">
-                        <i class="fas fa-user"></i>
-                        <span>Mi Información</span>
-                    </div>
-                    <div class="menu-item" data-section="orders">
-                        <i class="fas fa-shopping-bag"></i>
-                        <span>Mis Pedidos</span>
-                    </div>
-                    <div class="menu-item" data-section="favorites">
-                        <i class="fas fa-heart"></i>
-                        <span>Mis Favoritos</span>
-                    </div>
-                    <div class="menu-item" data-section="addresses">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span>Mis Direcciones</span>
-                    </div>
-                    <div class="menu-item" data-section="settings">
-                        <i class="fas fa-cog"></i>
-                        <span>Configuración</span>
-                    </div>
+                <!-- Tab: Configuración -->
+                <div id="configuracion-tab" class="tab-content bg-white rounded-lg shadow-md p-6 hidden">
+                    <h2 class="text-2xl font-bold mb-6">Configuración de Cuenta</h2>
                     
-                    <hr style="margin: 20px 0;">
-                    
-                    <form action="{{ route('logout') }}" method="POST">
+                    <!-- Formulario de actualización de perfil -->
+                    <form id="profile-form" class="space-y-6">
                         @csrf
-                        <button type="submit" class="menu-item w-full text-left" style="color: #f44336;">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span>Cerrar Sesión</span>
-                        </button>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                                <input type="text" name="first_name" value="{{ Auth::user()->first_name }}" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
+                                <input type="text" name="last_name" value="{{ Auth::user()->last_name }}" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" name="email" value="{{ Auth::user()->email }}" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                            <input type="tel" name="phone" value="{{ Auth::user()->phone ?? '' }}" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        
+                        <div class="pt-4 border-t">
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold">
+                                Guardar Cambios
+                            </button>
+                        </div>
                     </form>
-                </div>
-            </div>
-
-            <!-- Contenido Principal -->
-            <div class="col-span-9">
-                <!-- Sección: Mi Información -->
-                <div id="section-info" class="section-content">
-                    <div class="profile-card">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-2xl font-bold text-gray-800">Mi Información Personal</h2>
-                            <button class="btn-secondary" onclick="toggleEdit()">
-                                <i class="fas fa-edit"></i> Editar
+                    
+                    <!-- Cambiar contraseña -->
+                    <div class="mt-8 pt-8 border-t">
+                        <h3 class="text-xl font-bold mb-4">Cambiar Contraseña</h3>
+                        <form id="password-form" class="space-y-4">
+                            @csrf
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña Actual</label>
+                                <input type="password" name="current_password" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Contraseña</label>
+                                <input type="password" name="new_password" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Nueva Contraseña</label>
+                                <input type="password" name="new_password_confirmation" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            
+                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold">
+                                Actualizar Contraseña
                             </button>
-                        </div>
-
-                        <div class="info-row">
-                            <div class="info-label">Nombre:</div>
-                            <div class="info-value">{{ Auth::user()->first_name }}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Apellido:</div>
-                            <div class="info-value">{{ Auth::user()->last_name }}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Email:</div>
-                            <div class="info-value">{{ Auth::user()->email }}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Teléfono:</div>
-                            <div class="info-value">{{ Auth::user()->phone ?? 'No registrado' }}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Dirección:</div>
-                            <div class="info-value">{{ Auth::user()->address ?? 'No registrada' }}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Miembro desde:</div>
-                            <div class="info-value">{{ Auth::user()->created_at->format('d/m/Y H:i') }}</div>
-                        </div>
-                    </div>
-
-                    <!-- Estadísticas -->
-                    <div class="grid grid-cols-3 gap-6 mt-6">
-                        <div class="profile-card text-center">
-                            <i class="fas fa-shopping-bag text-4xl text-[#ffa3c2] mb-3"></i>
-                            <h3 class="text-3xl font-bold text-gray-800">0</h3>
-                            <p class="text-gray-600">Pedidos Totales</p>
-                        </div>
-                        <div class="profile-card text-center">
-                            <i class="fas fa-heart text-4xl text-[#ffa3c2] mb-3"></i>
-                            <h3 class="text-3xl font-bold text-gray-800">0</h3>
-                            <p class="text-gray-600">Favoritos</p>
-                        </div>
-                        <div class="profile-card text-center">
-                            <i class="fas fa-star text-4xl text-[#ffa3c2] mb-3"></i>
-                            <h3 class="text-3xl font-bold text-gray-800">0</h3>
-                            <p class="text-gray-600">Reseñas</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sección: Mis Pedidos -->
-                <div id="section-orders" class="section-content" style="display: none;">
-                    <div class="profile-card">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Mis Pedidos</h2>
-                        
-                        <div class="empty-state">
-                            <i class="fas fa-shopping-bag"></i>
-                            <h3 class="text-xl font-bold text-gray-600 mb-2">No tienes pedidos aún</h3>
-                            <p class="text-gray-500 mb-4">Explora nuestra tienda y realiza tu primera compra</p>
-                            <a href="{{ route('inicio') }}" class="btn-primary inline-block">
-                                <i class="fas fa-shopping-cart"></i> Ir a comprar
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sección: Mis Favoritos -->
-                <div id="section-favorites" class="section-content" style="display: none;">
-                    <div class="profile-card">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Mis Favoritos</h2>
-                        
-                        <div class="empty-state">
-                            <i class="fas fa-heart"></i>
-                            <h3 class="text-xl font-bold text-gray-600 mb-2">No tienes favoritos guardados</h3>
-                            <p class="text-gray-500 mb-4">Guarda tus libros favoritos para encontrarlos fácilmente</p>
-                            <a href="{{ route('inicio') }}" class="btn-primary inline-block">
-                                <i class="fas fa-book"></i> Explorar libros
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sección: Mis Direcciones -->
-                <div id="section-addresses" class="section-content" style="display: none;">
-                    <div class="profile-card">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-2xl font-bold text-gray-800">Mis Direcciones</h2>
-                            <button class="btn-primary">
-                                <i class="fas fa-plus"></i> Agregar dirección
-                            </button>
-                        </div>
-                        
-                        <div class="empty-state">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <h3 class="text-xl font-bold text-gray-600 mb-2">No tienes direcciones guardadas</h3>
-                            <p class="text-gray-500">Agrega una dirección para facilitar tus compras</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sección: Configuración -->
-                <div id="section-settings" class="section-content" style="display: none;">
-                    <div class="profile-card">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Configuración de Cuenta</h2>
-                        
-                        <div class="space-y-6">
-                            <div class="border-b pb-4">
-                                <h3 class="font-bold text-gray-800 mb-2">Cambiar Contraseña</h3>
-                                <p class="text-gray-600 text-sm mb-3">Actualiza tu contraseña periódicamente para mantener tu cuenta segura</p>
-                                <button class="btn-secondary">Cambiar contraseña</button>
-                            </div>
-
-                            <div class="border-b pb-4">
-                                <h3 class="font-bold text-gray-800 mb-2">Notificaciones</h3>
-                                <div class="space-y-2">
-                                    <label class="flex items-center gap-3">
-                                        <input type="checkbox" checked class="w-5 h-5">
-                                        <span>Recibir ofertas y promociones por email</span>
-                                    </label>
-                                    <label class="flex items-center gap-3">
-                                        <input type="checkbox" checked class="w-5 h-5">
-                                        <span>Notificarme sobre mis pedidos</span>
-                                    </label>
-                                    <label class="flex items-center gap-3">
-                                        <input type="checkbox" class="w-5 h-5">
-                                        <span>Recibir recomendaciones personalizadas</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="border-b pb-4">
-                                <h3 class="font-bold text-gray-800 mb-2 text-red-600">Zona Peligrosa</h3>
-                                <p class="text-gray-600 text-sm mb-3">Esta acción es irreversible. Todos tus datos serán eliminados permanentemente.</p>
-                                <button class="btn-danger">Eliminar mi cuenta</button>
-                            </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-12 mt-12">
-        <div class="container mx-auto px-4">
-            <div class="grid grid-cols-4 gap-8 mb-8">
-                <div class="text-center">
-                    <div class="bg-sky-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-user text-2xl"></i>
-                    </div>
-                    <h4 class="text-lg font-bold mb-4">SERVICIO AL CLIENTE</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="hover:text-sky-400">Mis Pedidos</a></li>
-                        <li><a href="#" class="hover:text-sky-400">Mis Favoritos</a></li>
-                        <li><a href="#" class="hover:text-sky-400">Mis Direcciones</a></li>
-                    </ul>
-                </div>
-
-                <div class="text-center">
-                    <div class="bg-sky-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-shopping-cart text-2xl"></i>
-                    </div>
-                    <h4 class="text-lg font-bold mb-4">POLÍTICAS DE LA TIENDA</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="hover:text-sky-400">Sobre Nosotros</a></li>
-                        <li><a href="#" class="hover:text-sky-400">Aviso de privacidad</a></li>
-                        <li><a href="#" class="hover:text-sky-400">Políticas de envío</a></li>
-                    </ul>
-                </div>
-
-                <div class="text-center">
-                    <div class="bg-sky-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-headset text-2xl"></i>
-                    </div>
-                    <h4 class="text-lg font-bold mb-4">SOPORTE AL CLIENTE</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="hover:text-sky-400">Ayuda</a></li>
-                        <li><a href="#" class="hover:text-sky-400">Contáctenos</a></li>
-                        <li><a href="#" class="hover:text-sky-400">Nuestras librerías</a></li>
-                    </ul>
-                </div>
-
-                <div class="text-center">
-                    <div class="bg-sky-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-file-invoice text-2xl"></i>
-                    </div>
-                    <h4 class="text-lg font-bold mb-4">FACTURACIÓN</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="hover:text-sky-400">Facturación electrónica</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="border-t border-gray-700 pt-8">
-                <div class="text-center text-sm text-gray-400">
-                    <p>Librerías Gonvill S.A. de C.V. Todos los Derechos Reservados.</p>
-                </div>
-            </div>
+<!-- Modal para agregar/editar dirección -->
+<div id="address-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h3 id="address-modal-title" class="text-2xl font-bold">Agregar Dirección</h3>
+            <button onclick="closeAddressModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
         </div>
-    </footer>
+        
+        <form id="address-form" class="space-y-4">
+            @csrf
+            <input type="hidden" name="address_id" id="address_id">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del destinatario *</label>
+                    <input type="text" name="recipient_name" id="recipient_name" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono *</label>
+                    <input type="tel" name="phone" id="phone" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Calle y número *</label>
+                <input type="text" name="street_address" id="street_address" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Apartamento/Depto</label>
+                    <input type="text" name="apartment" id="apartment"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Colonia</label>
+                    <input type="text" name="neighborhood" id="neighborhood"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ciudad *</label>
+                    <input type="text" name="city" id="city" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Estado *</label>
+                    <input type="text" name="state" id="state" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Código Postal *</label>
+                    <input type="text" name="postal_code" id="postal_code" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Referencias</label>
+                <textarea name="references" id="references" rows="3"
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            
+            <div class="flex items-center">
+                <input type="checkbox" name="is_default" id="is_default" class="mr-2">
+                <label for="is_default" class="text-sm text-gray-700">Establecer como dirección predeterminada</label>
+            </div>
+            
+            <div class="flex gap-4 pt-4">
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold">
+                    Guardar Dirección
+                </button>
+                <button type="button" onclick="closeAddressModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-lg font-semibold">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    <script>
-        // Navegación entre secciones
-        document.querySelectorAll('.menu-item[data-section]').forEach(item => {
-            item.addEventListener('click', function() {
-                // Remover active de todos
-                document.querySelectorAll('.menu-item').forEach(mi => mi.classList.remove('active'));
-                
-                // Agregar active al clickeado
-                this.classList.add('active');
-                
-                // Ocultar todas las secciones
-                document.querySelectorAll('.section-content').forEach(section => {
-                    section.style.display = 'none';
-                });
-                
-                // Mostrar la sección correspondiente
-                const sectionId = 'section-' + this.getAttribute('data-section');
-                document.getElementById(sectionId).style.display = 'block';
-            });
+<script>
+// Sistema de pestañas
+function openTab(event, tabName) {
+    // Ocultar todos los tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remover clase active de todos los botones
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active', 'bg-blue-50', 'text-blue-600', 'font-semibold');
+    });
+    
+    // Mostrar el tab seleccionado
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
+    
+    // Marcar botón como activo
+    event.currentTarget.classList.add('active', 'bg-blue-50', 'text-blue-600', 'font-semibold');
+    
+    // Cargar datos según el tab
+    switch(tabName) {
+        case 'pedidos':
+            loadOrders();
+            break;
+        case 'favoritos':
+            loadFavorites();
+            break;
+        case 'direcciones':
+            loadAddresses();
+            break;
+        case 'facturas':
+            loadInvoices();
+            break;
+    }
+}
+
+// Cargar pedidos
+async function loadOrders() {
+    try {
+        const response = await fetch('/api/orders', {
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
         });
-
-        function toggleEdit() {
-            alert('Función de edición en desarrollo');
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayOrders(data.orders);
         }
-    </script>
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('pedidos-container').innerHTML = `
+            <div class="text-center py-12 text-red-600">
+                <p>Error al cargar los pedidos</p>
+            </div>
+        `;
+    }
+}
 
-</body>
-</html>
+function displayOrders(orders) {
+    const container = document.getElementById('pedidos-container');
+    
+    if (orders.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No tienes pedidos</h3>
+                <p class="text-gray-500 mb-4">¡Empieza a comprar!</p>
+                <a href="{{ route('inicio') }}" class="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                    Explorar Libros
+                </a>
+            </div>
+        `;
+        return;
+    }
+    
+    const statusColors = {
+        'warning': 'bg-yellow-100 text-yellow-800',
+        'info': 'bg-blue-100 text-blue-800',
+        'primary': 'bg-indigo-100 text-indigo-800',
+        'secondary': 'bg-purple-100 text-purple-800',
+        'success': 'bg-green-100 text-green-800',
+        'danger': 'bg-red-100 text-red-800',
+    };
+    
+    container.innerHTML = `
+        <div class="space-y-4">
+            ${orders.map(order => `
+                <div class="border rounded-lg p-6 hover:shadow-lg transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="font-bold text-lg">${order.order_number}</h3>
+                            <p class="text-sm text-gray-600">${order.created_at}</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-sm font-semibold ${statusColors[order.status_color] || 'bg-gray-100 text-gray-800'}">
+                            ${order.status_label}
+                        </span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-600">${order.total_items} artículo(s)</p>
+                            <p class="text-xl font-bold text-gray-900">$${parseFloat(order.total).toFixed(2)}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            ${order.can_be_cancelled ? `
+                                <button onclick="cancelOrder(${order.order_id})" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                                    Cancelar
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Cancelar pedido
+async function cancelOrder(orderId) {
+    if (!confirm('¿Estás seguro de que deseas cancelar este pedido?')) return;
+    
+    const reason = prompt('Por favor, indica el motivo de la cancelación (opcional):');
+    
+    try {
+        const response = await fetch(`/api/orders/${orderId}/cancel`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ reason })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Pedido cancelado exitosamente');
+            loadOrders();
+        } else {
+            alert(data.message || 'Error al cancelar el pedido');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cancelar el pedido');
+    }
+}
+
+// Cargar favoritos
+async function loadFavorites() {
+    try {
+        const response = await fetch('/api/wishlist', {
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayFavorites(data.wishlist);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('favoritos-container').innerHTML = `
+            <div class="text-center py-12 text-red-600">
+                <p>Error al cargar los favoritos</p>
+            </div>
+        `;
+    }
+}
+
+function displayFavorites(wishlist) {
+    const container = document.getElementById('favoritos-container');
+    
+    if (wishlist.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No tienes favoritos</h3>
+                <p class="text-gray-500 mb-4">Agrega libros a tu lista de deseos</p>
+                <a href="{{ route('inicio') }}" class="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                    Explorar Libros
+                </a>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${wishlist.map(item => `
+                <div class="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+                    <img src="${item.book.cover_url}" alt="${item.book.title}" class="w-full h-48 object-cover mb-4 rounded">
+                    <h3 class="font-bold text-lg mb-2 line-clamp-2">${item.book.title}</h3>
+                    <p class="text-gray-600 text-sm mb-2">${item.book.authors}</p>
+                    <p class="text-xl font-bold text-green-600 mb-4">$${parseFloat(item.book.discounted_price || item.book.price).toFixed(2)}</p>
+                    
+                    <div class="flex gap-2">
+                        <form action="{{ route('cart.add') }}" method="POST" class="flex-1">
+                            @csrf
+                            <input type="hidden" name="book_id" value="${item.book.book_id}">
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                Agregar al Carrito
+                            </button>
+                        </form>
+                        <button onclick="removeFromWishlist(${item.wishlist_id})" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+async function removeFromWishlist(wishlistId) {
+    try {
+        const response = await fetch(`/api/wishlist/${wishlistId}`, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            loadFavorites();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Cargar direcciones
+async function loadAddresses() {
+    try {
+        const response = await fetch('/api/addresses', {
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayAddresses(data.addresses);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('direcciones-container').innerHTML = `
+            <div class="text-center py-12 text-red-600">
+                <p>Error al cargar las direcciones</p>
+            </div>
+        `;
+    }
+}
+
+function displayAddresses(addresses) {
+    const container = document.getElementById('direcciones-container');
+    
+    if (addresses.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No tienes direcciones guardadas</h3>
+                <p class="text-gray-500 mb-4">Agrega una dirección para facilitar tus compras</p>
+                <button onclick="openAddressModal()" class="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                    Agregar Dirección
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${addresses.map(address => `
+                <div class="border rounded-lg p-6 ${address.is_default ? 'border-blue-500 bg-blue-50' : 'hover:shadow-lg'}">
+                    ${address.is_default ? '<span class="inline-block bg-blue-600 text-white text-xs px-2 py-1 rounded mb-2">Predeterminada</span>' : ''}
+                    <h3 class="font-bold text-lg mb-2">${address.recipient_name}</h3>
+                    <p class="text-gray-600 text-sm mb-1">${address.phone}</p>
+                    <p class="text-gray-700 text-sm mb-4">${address.full_address}</p>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="editAddress(${address.address_id})" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                            Editar
+                        </button>
+                        ${!address.is_default ? `
+                            <button onclick="setDefaultAddress(${address.address_id})" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                Predeterminada
+                            </button>
+                            <button onclick="deleteAddress(${address.address_id})" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                                ✕
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Modal de dirección
+function openAddressModal(addressData = null) {
+    const modal = document.getElementById('address-modal');
+    const form = document.getElementById('address-form');
+    const title = document.getElementById('address-modal-title');
+    
+    if (addressData) {
+        title.textContent = 'Editar Dirección';
+        document.getElementById('address_id').value = addressData.address_id;
+        document.getElementById('recipient_name').value = addressData.recipient_name;
+        document.getElementById('phone').value = addressData.phone;
+        document.getElementById('street_address').value = addressData.street_address;
+        document.getElementById('apartment').value = addressData.apartment || '';
+        document.getElementById('neighborhood').value = addressData.neighborhood || '';
+        document.getElementById('city').value = addressData.city;
+        document.getElementById('state').value = addressData.state;
+        document.getElementById('postal_code').value = addressData.postal_code;
+        document.getElementById('references').value = addressData.references || '';
+        document.getElementById('is_default').checked = addressData.is_default;
+    } else {
+        title.textContent = 'Agregar Dirección';
+        form.reset();
+        document.getElementById('address_id').value = '';
+    }
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeAddressModal() {
+    const modal = document.getElementById('address-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+async function editAddress(addressId) {
+    try {
+        const response = await fetch(`/api/addresses/${addressId}`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            openAddressModal(data.address);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function setDefaultAddress(addressId) {
+    try {
+        const response = await fetch(`/api/addresses/${addressId}/set-default`, {
+            method: 'PUT',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            loadAddresses();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function deleteAddress(addressId) {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta dirección?')) return;
+    
+    try {
+        const response = await fetch(`/api/addresses/${addressId}`, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            loadAddresses();
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Submit del formulario de dirección
+document.getElementById('address-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const addressId = document.getElementById('address_id').value;
+    const url = addressId ? `/api/addresses/${addressId}` : '/api/addresses';
+    const method = addressId ? 'PUT' : 'POST';
+    
+    const data = {
+        recipient_name: formData.get('recipient_name'),
+        phone: formData.get('phone'),
+        street_address: formData.get('street_address'),
+        apartment: formData.get('apartment'),
+        neighborhood: formData.get('neighborhood'),
+        city: formData.get('city'),
+        state: formData.get('state'),
+        postal_code: formData.get('postal_code'),
+        references: formData.get('references'),
+        is_default: formData.get('is_default') ? true : false
+    };
+    
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            closeAddressModal();
+            loadAddresses();
+            alert(result.message);
+        } else {
+            alert('Error al guardar la dirección');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar la dirección');
+    }
+});
+
+// Cargar facturas
+async function loadInvoices() {
+    try {
+        const response = await fetch('/api/invoices', {
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayInvoices(data.invoices);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('facturas-container').innerHTML = `
+            <div class="text-center py-12 text-red-600">
+                <p>Error al cargar las facturas</p>
+            </div>
+        `;
+    }
+}
+
+function displayInvoices(invoices) {
+    const container = document.getElementById('facturas-container');
+    
+    if (invoices.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No tienes facturas</h3>
+                <p class="text-gray-500">Las facturas se generan automáticamente después de completar tus compras</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Factura</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orden</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    ${invoices.map(invoice => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="font-mono text-sm font-semibold text-blue-600">${invoice.invoice_number}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${invoice.order_number}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${invoice.issue_date}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">$${parseFloat(invoice.total).toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <div class="flex gap-2">
+                                    <a href="/invoices/${invoice.invoice_id}" class="text-blue-600 hover:text-blue-800">Ver</a>
+                                    <span class="text-gray-300">|</span>
+                                    <a href="/invoices/${invoice.invoice_id}/download" class="text-green-600 hover:text-green-800">Descargar PDF</a>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+// Actualizar perfil
+document.getElementById('profile-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        first_name: formData.get('first_name'),
+        last_name: formData.get('last_name'),
+        email: formData.get('email'),
+        phone: formData.get('phone')
+    };
+    
+    try {
+        const response = await fetch('/api/user/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Perfil actualizado exitosamente');
+            location.reload();
+        } else {
+            alert('Error al actualizar el perfil');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al actualizar el perfil');
+    }
+});
+
+// Cambiar contraseña
+document.getElementById('password-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        current_password: formData.get('current_password'),
+        new_password: formData.get('new_password'),
+        new_password_confirmation: formData.get('new_password_confirmation')
+    };
+    
+    if (data.new_password !== data.new_password_confirmation) {
+        alert('Las contraseñas no coinciden');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/user/password', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Contraseña actualizada exitosamente');
+            this.reset();
+        } else {
+            alert(result.message || 'Error al actualizar la contraseña');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al actualizar la contraseña');
+    }
+});
+
+// Cargar pedidos al iniciar
+document.addEventListener('DOMContentLoaded', function() {
+    loadOrders();
+});
+</script>
+
+<style>
+.tab-button.active {
+    background-color: #EFF6FF;
+    color: #2563EB;
+    font-weight: 600;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+@endsection

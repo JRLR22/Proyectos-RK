@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Web;
 
 use App\Models\Review;
 use App\Models\Book;
@@ -62,57 +62,36 @@ class ReviewController extends Controller
      * Crear nueva reseña
      * POST /api/books/{book_id}/reviews
      */
-    public function store(Request $request, $bookId)
-    {
-        $validated = $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'required|string|min:10|max:1000',
-        ]);
+public function store(Request $request, $bookId)
+{
+    $validated = $request->validate([
+        'rating' => 'required|integer|min:1|max:5',
+        'comment' => 'required|string|min:10|max:1000',
+    ]);
 
-        $user = Auth::user();
-        $book = Book::findOrFail($bookId);
+    $user = Auth::user();
 
-        // Verificar si ya ha dejado una reseña
-        $existingReview = Review::where('user_id', $user->user_id)
-                                ->where('book_id', $bookId)
-                                ->first();
+    $existingReview = Review::where('user_id', $user->user_id)
+                            ->where('book_id', $bookId)
+                            ->first();
 
-        if ($existingReview) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ya has dejado una reseña para este libro. Puedes editarla.',
-            ], 400);
-        }
-
-        // Verificar si ha comprado el libro
-        $canReview = $user->canReviewBook($bookId);
-
-        if (!$canReview) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Solo puedes reseñar libros que hayas comprado',
-            ], 403);
-        }
-
-        // Crear reseña
-        $review = Review::create([
-            'user_id' => $user->user_id,
-            'book_id' => $bookId,
-            'rating' => $validated['rating'],
-            'comment' => $validated['comment'],
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Reseña publicada exitosamente',
-            'review' => [
-                'review_id' => $review->review_id,
-                'rating' => $review->rating,
-                'comment' => $review->comment,
-                'created_at' => $review->created_at->format('d/m/Y'),
-            ],
-        ], 201);
+    if ($existingReview) {
+        return back()->with('error', 'Ya has dejado una reseña para este libro.');
     }
+
+    if (!$user->canReviewBook($bookId)) {
+        return back()->with('error', 'Solo puedes reseñar libros que hayas comprado');
+    }
+
+    Review::create([
+        'user_id' => $user->user_id,
+        'book_id' => $bookId,
+        'rating' => $validated['rating'],
+        'comment' => $validated['comment'],
+    ]);
+
+    return back()->with('success', '¡Reseña publicada exitosamente! ⭐');
+}
 
     /**
      * Actualizar reseña

@@ -1,12 +1,19 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\WebAuthController;
-use App\Http\Controllers\PageController;
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\BookController;
-use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Web\WebAuthController;
+use App\Http\Controllers\Web\WishlistController;
+use App\Http\Controllers\Web\PageController;
+use App\Http\Controllers\Web\CartController;
+use App\Http\Controllers\Web\InvoiceController;
+use App\Http\Controllers\Web\PaymentController;
+use App\Http\Controllers\Web\ProfileController;
+use App\Http\Controllers\Web\BookController;
+use App\Http\Controllers\Web\AdminController;
+use App\Http\Controllers\Web\OrderController;
+use App\Http\Controllers\Web\AddressController;
+use App\Http\Controllers\Web\ReviewController;
+use App\Http\Controllers\Web\UserController;
 
 // Ruta principal
 Route::get('/', [PageController::class, 'inicio'])->name('inicio');
@@ -20,7 +27,24 @@ Route::post('/admin/logout', [WebAuthController::class, 'logout'])->name('admin.
 
 // Perfil de usuario (requiere autenticación)
 Route::middleware(['auth'])->group(function () {
-    Route::get('/perfil', [WebAuthController::class, 'showProfile'])->name('profile');
+
+    Route::get('/perfil', [ProfileController::class, 'index'])
+        ->name('profile');
+
+    Route::put('/user/profile', [UserController::class, 'updateProfile'])
+        ->name('user.profile.update');
+
+    Route::put('/user/password', [UserController::class, 'updatePassword'])
+        ->name('user.password.update');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::put('/orders/{order}/cancel', [OrderController::class, 'cancel'])
+        ->name('orders.cancel');
+        
+    Route::get('/orders/{order}', [OrderController::class, 'show'])
+    ->name('orders.show');
+
 });
 
 // Dashboard de administrador y CRUD de libros
@@ -37,7 +61,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 });
 
 // Rutas de páginas estáticas
-
 Route::get('/impresion-bajo-demanda', [PageController::class, 'impresionBajoDemanda'])->name('impresion.demanda');
 Route::get('/sobre-nosotros', [PageController::class, 'sobreNosotros'])->name('sobre.nosotros');
 Route::get('/nuestras-librerias', [PageController::class, 'nuestrasLibrerias'])->name('nuestras.librerias');
@@ -47,7 +70,9 @@ Route::get('/schoolshop', [PageController::class, 'schoolShop'])->name('schoolsh
 Route::get('/contacto', [PageController::class, 'contacto'])->name('contacto');
 Route::get('/new-releases', [PageController::class, 'newReleases'])->name('new.releases');
 Route::get('/politicas-envios', [PageController::class, 'politicasenvios'])->name('politicas.envios');
-
+Route::get('/proteccion-datos', function () {
+    return view('proteccion-datos');
+})->name('proteccion-datos');
 
 // Rutas de libros
 Route::prefix('libros')->name('libros.')->group(function () {
@@ -89,7 +114,48 @@ Route::middleware(['auth'])->group(function () {
 // Webhook de Stripe (sin middleware de autenticación)
 Route::post('/webhook/stripe', [PaymentController::class, 'handleStripeWebhook'])->name('stripe.webhook');
 
-// Ruta hacia Politicas de seguridad 
-Route::get('/proteccion-datos', function () {
-    return view('proteccion-datos');
-})->name('proteccion-datos');
+// Rutas de Wishlist
+Route::middleware(['auth'])->prefix('wishlist')->name('wishlist.')->group(function () {
+    Route::get('/', [WishlistController::class, 'index'])->name('index');
+    Route::post('/add/{book_id}', [WishlistController::class, 'add'])->name('add');
+    Route::delete('/{id}', [WishlistController::class, 'remove'])->name('remove');
+});
+
+// Rutas de Facturas (requieren autenticación)
+Route::middleware(['auth'])->prefix('invoices')->name('invoices.')->group(function () {
+    Route::get('/', [InvoiceController::class, 'index'])->name('index');
+    Route::get('/{id}', [InvoiceController::class, 'show'])->name('show');
+    Route::get('/{id}/download', [InvoiceController::class, 'download'])->name('download');
+    Route::get('/{id}/preview', [InvoiceController::class, 'preview'])->name('preview');
+});
+
+// Solicitar factura para una orden
+Route::middleware(['auth'])->post('/orders/{order_id}/request-invoice', [InvoiceController::class, 'requestInvoice'])->name('orders.request-invoice');
+
+// Rutas de reseñas
+Route::middleware(['auth'])->group(function () {
+    Route::post('/libros/{book_id}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+    Route::get('/reviews/{id}/edit', [ReviewController::class, 'edit'])->name('reviews.edit');
+    Route::put('/reviews/{id}', [ReviewController::class, 'update'])->name('reviews.update');
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+});
+
+// Rutas de testing
+Route::get('/test-redis-speed', function () {
+    $start = microtime(true);
+    $books1 = DB::table('books')->limit(10)->get();
+    $time1 = (microtime(true) - $start) * 1000;
+
+    $start = microtime(true);
+    $books2 = Cache::remember('speed-test', 60, function () {
+        return DB::table('books')->limit(10)->get();
+    });
+    $time2 = (microtime(true) - $start) * 1000;
+
+    return response()->json([
+        'sin_cache' => round($time1, 2) . ' ms',
+        'con_cache' => round($time2, 2) . ' ms',
+        'mejora' => $time2 > 0 ? round($time1 / $time2, 1) . 'x más rápido' : 'N/A',
+        'libros' => $books2->count()
+    ]);
+});

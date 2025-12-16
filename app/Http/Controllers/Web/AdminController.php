@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Web;
 
 use App\Models\Book;
 use App\Models\Author;
@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Order;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
@@ -105,6 +106,8 @@ class AdminController extends Controller
         // Asociar el autor al libro
         $book->authors()->attach($author->author_id);
 
+        Cache::forget('all-books');
+        Cache::forget("category-{$book->category_id}");
 
             return redirect()
                 ->route('admin.books.index')
@@ -179,6 +182,9 @@ class AdminController extends Controller
 
              $book->authors()->sync([$author->author_id]);
 
+            Cache::forget('all-books');
+            Cache::forget("category-{$book->category_id}");
+
             return redirect()
                 ->route('admin.books.index')
                 ->with('success', 'Libro actualizado exitosamente');
@@ -202,6 +208,9 @@ class AdminController extends Controller
             
             $book->delete();
 
+            Cache::forget('all-books');
+            Cache::forget("category-{$book->category_id}");
+            
             return redirect()
                 ->route('admin.books.index')
                 ->with('success', 'Libro eliminado exitosamente');
