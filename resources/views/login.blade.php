@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Login - Gonvill</title>
     <style>
         body {
@@ -42,6 +43,7 @@
             border-radius: 6px;
             border: 1px solid #ccc;
             font-size: 14px;
+            box-sizing: border-box;
         }
         input:focus {
             outline: none;
@@ -71,27 +73,52 @@
         .extra-links a:hover {
             text-decoration: underline;
         }
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <h2>Iniciar Sesión</h2>
-        <form method="POST" action="#">
+
+        {{-- Mostrar errores de validación --}}
+        @if ($errors->any())
+            <div class="error-message">
+                <ul style="margin: 0; padding-left: 20px;">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        {{-- Formulario de login con @csrf --}}
+        <form method="POST" action="{{ route('login') }}">
+            @csrf
+            
             <div class="form-group">
                 <label for="email">Correo electrónico</label>
-                <input type="email" id="email" name="email" placeholder="Ingresa tu correo" required>
+                <input type="email" id="email" name="email" value="{{ old('email') }}" placeholder="Ingresa tu correo" required autofocus>
             </div>
+            
             <div class="form-group">
                 <label for="password">Contraseña</label>
                 <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña" required>
             </div>
+            
             <button type="submit" class="btn">Entrar</button>
         </form>
+        
         <div class="extra-links">
             <p><a href="#">¿Olvidaste tu contraseña?</a></p>
-            <p><a href="#">Crear nueva cuenta</a></p>
+            <p><a href="{{ route('mi.cuenta') }}">Crear nueva cuenta</a></p>
         </div>
     </div>
 </body>
-
 </html>

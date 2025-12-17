@@ -18,6 +18,46 @@
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold text-gray-800 mb-6">Finalizar Compra</h1>
 
+        <!-- Dirección de Envío -->
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Dirección de Envío</h2>
+    
+    @if($addresses->count() > 1)
+        <div class="space-y-3">
+            @foreach($addresses as $address)
+                <label class="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 {{ $address->is_default ? 'border-blue-500 bg-blue-50' : 'border-gray-200' }}">
+                    <input 
+                        type="radio" 
+                        name="address_id" 
+                        value="{{ $address->address_id }}"
+                        {{ $address->is_default ? 'checked' : '' }}
+                        onchange="updateOrderAddress({{ $address->address_id }})"
+                        class="mt-1"
+                    >
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-800">{{ $address->recipient_name }}</p>
+                        <p class="text-sm text-gray-600">{{ $address->street_address }}</p>
+                        @if($address->apartment)
+                            <p class="text-sm text-gray-600">{{ $address->apartment }}</p>
+                        @endif
+                        <p class="text-sm text-gray-600">{{ $address->city }}, {{ $address->state }} {{ $address->postal_code }}</p>
+                        <p class="text-sm text-gray-500">{{ $address->phone }}</p>
+                    </div>
+                </label>
+            @endforeach
+        </div>
+    @else
+        <div class="p-4 border rounded-lg">
+            <p class="font-semibold text-gray-800">{{ $selectedAddress->recipient_name }}</p>
+            <p class="text-sm text-gray-600">{{ $selectedAddress->full_address }}</p>
+            <p class="text-sm text-gray-500">{{ $selectedAddress->phone }}</p>
+        </div>
+    @endif
+    
+    <a href="{{ route('profile') }}" class="text-blue-600 hover:underline text-sm mt-3 inline-block">
+        + Agregar nueva dirección
+    </a>
+</div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Formulario de pago -->
             <div class="lg:col-span-2">
@@ -110,6 +150,10 @@
                             <span>-${{ number_format($summary['discount'], 2) }}</span>
                         </div>
                         @endif
+                        <div class="flex justify-between text-gray-600">
+                            <span>IVA (16%):</span>
+                            <span>${{ number_format($summary['tax'] ?? 0, 2) }}</span>
+                        </div>
                         <div class="border-t pt-3 flex justify-between text-xl font-bold text-gray-800">
                             <span>Total:</span>
                             <span>${{ number_format($summary['total'], 2) }} MXN</span>
@@ -378,6 +422,28 @@
             console.log('DOM cargado, inicializando...');
             selectPaymentMethod('stripe');
         });
+
+        // Actualizar dirección de la orden
+async function updateOrderAddress(addressId) {
+    try {
+        const response = await fetch(`/orders/${orderId}/update-address`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ address_id: addressId })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            console.log('Dirección actualizada');
+        }
+    } catch (error) {
+        console.error('Error actualizando dirección:', error);
+    }
+}
     </script>
 </body>
 </html>

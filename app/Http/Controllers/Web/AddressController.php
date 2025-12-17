@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Http\Controllers\Controller;
 use App\Models\Address;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -268,7 +269,7 @@ class AddressController extends Controller
      * Validar si una dirección está completa
      * GET /api/addresses/{id}/validate
      */
-    public function validate($id)
+    public function validateAddress($id)
     {
         $user = Auth::user();
         

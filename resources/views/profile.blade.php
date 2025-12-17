@@ -26,6 +26,16 @@
                     Configuración
                 </button>
             </div>
+                                <!-- ⬇BOTÓN DE CERRAR SESIÓN -->
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 mt-4 rounded-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        Cerrar Sesión
+                    </button>
+                </form>
         </div>
 
         @if(session('success'))
@@ -249,8 +259,8 @@
 </div>
 
 <!-- Modal para agregar/editar dirección -->
-<div id="address-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+<div id="address-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999]">
+    <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 my-8 max-h-[85vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
             <h3 id="address-modal-title" class="text-2xl font-bold">Agregar Dirección</h3>
             <button onclick="closeAddressModal()" class="text-gray-400 hover:text-gray-600">
@@ -384,7 +394,8 @@ async function loadOrders() {
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
+            },
+            credentials: 'same-origin'
         });
         
         const data = await response.json();
@@ -470,7 +481,7 @@ async function cancelOrder(orderId) {
     const reason = prompt('Por favor, indica el motivo de la cancelación (opcional):');
     
     try {
-        const response = await fetch(`/api/orders/${orderId}/cancel`, {
+        const response = await fetch(`/orders/${orderId}/cancel`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -497,7 +508,7 @@ async function cancelOrder(orderId) {
 // Cargar favoritos
 async function loadFavorites() {
     try {
-        const response = await fetch('/api/wishlist', {
+        const response = await fetch('/wishlist', {
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
@@ -568,7 +579,7 @@ function displayFavorites(wishlist) {
 
 async function removeFromWishlist(wishlistId) {
     try {
-        const response = await fetch(`/api/wishlist/${wishlistId}`, {
+        const response = await fetch(`/wishlist/${wishlistId}`, {
             method: 'DELETE',
             headers: {
                 'Accept': 'application/json',
@@ -593,7 +604,8 @@ async function loadAddresses() {
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
+            },
+            credentials: 'same-origin'
         });
         
         const data = await response.json();
@@ -696,7 +708,7 @@ function closeAddressModal() {
 
 async function editAddress(addressId) {
     try {
-        const response = await fetch(`/api/addresses/${addressId}`, {
+        const response = await fetch(`/addresses/${addressId}`, {
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
@@ -715,7 +727,7 @@ async function editAddress(addressId) {
 
 async function setDefaultAddress(addressId) {
     try {
-        const response = await fetch(`/api/addresses/${addressId}/set-default`, {
+        const response = await fetch(`/addresses/${addressId}/set-default`, {
             method: 'PUT',
             headers: {
                 'Accept': 'application/json',
@@ -737,7 +749,7 @@ async function deleteAddress(addressId) {
     if (!confirm('¿Estás seguro de que deseas eliminar esta dirección?')) return;
     
     try {
-        const response = await fetch(`/api/addresses/${addressId}`, {
+        const response = await fetch(`/addresses/${addressId}`, {
             method: 'DELETE',
             headers: {
                 'Accept': 'application/json',
@@ -763,7 +775,7 @@ document.getElementById('address-form').addEventListener('submit', async functio
     
     const formData = new FormData(this);
     const addressId = document.getElementById('address_id').value;
-    const url = addressId ? `/api/addresses/${addressId}` : '/api/addresses';
+    const url = addressId ? `/addresses/${addressId}` : '/addresses';
     const method = addressId ? 'PUT' : 'POST';
     
     const data = {
@@ -812,7 +824,8 @@ async function loadInvoices() {
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
+            },
+            credentials: 'same-origin'
         });
         
         const data = await response.json();
@@ -895,7 +908,7 @@ document.getElementById('profile-form').addEventListener('submit', async functio
     };
     
     try {
-        const response = await fetch('/api/user/profile', {
+        const response = await fetch('/user/profile', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -936,7 +949,7 @@ document.getElementById('password-form').addEventListener('submit', async functi
     }
     
     try {
-        const response = await fetch('/api/user/password', {
+        const response = await fetch('user/password', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

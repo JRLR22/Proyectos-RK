@@ -4,12 +4,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Web\CartController;
+use App\Http\Controllers\Web\OrderController;
 use App\Http\Controllers\Web\AddressController;
-use App\Http\Controllers\ShippingController;
-use App\Http\Controllers\WishlistController;
-use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\Web\ShippingController;
+use App\Http\Controllers\Web\WishlistController;
+use App\Http\Controllers\Api\OrderController as ApiOrderController;
+use App\Http\Controllers\Web\ReviewController;
 
 
 // Rutas públicas (sin autenticación)
@@ -45,10 +46,10 @@ Route::prefix('cart')->group(function () {
 
 // Rutas de órdenes (requieren autenticación)
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/orders', [Api\OrderController::class, 'index']);
-    Route::get('/orders/{id}', [Api\OrderController::class, 'show']);
-    Route::post('/orders', [Api\OrderController::class, 'store']);
-    Route::put('/orders/{id}/cancel', [Api\OrderController::class, 'cancel']);
+    Route::get('/orders', [ApiOrderController::class, 'index']);
+    Route::get('/orders/{id}', [\App\Http\Controllers\Api\OrderController::class, 'show']);
+    Route::post('/orders', [\App\Http\Controllers\Api\OrderController::class, 'store']);
+    Route::put('/orders/{id}/cancel', [\App\Http\Controllers\Api\OrderController::class, 'cancel']);
 });
 
 // Rutas de direcciones (requieren autenticación)

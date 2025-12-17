@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -202,6 +203,34 @@ class InvoiceController extends Controller
                 'tax' => $invoice->tax,
                 'total' => $invoice->total,
             ],
+        ]);
+    }
+        /**
+     * Obtener facturas del usuario en JSON (para AJAX)
+     * GET /api/invoices
+     */
+    public function getUserInvoices()
+    {
+        $user = Auth::user();
+        
+        $invoices = Invoice::with('order')
+            ->whereHas('order', function($query) use ($user) {
+                $query->where('user_id', $user->user_id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'invoices' => $invoices->map(function ($invoice) {
+                return [
+                    'invoice_id' => $invoice->invoice_id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'order_number' => $invoice->order->order_number,
+                    'total' => $invoice->total,
+                    'issue_date' => $invoice->issue_date ? \Carbon\Carbon::parse($invoice->issue_date)->format('d/m/Y') : null,
+                ];
+            })
         ]);
     }
 }

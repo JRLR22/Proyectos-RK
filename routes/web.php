@@ -39,12 +39,30 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth'])->group(function () {
+    // Rutas AJAX para el perfil
+    Route::get('/api/orders', [\App\Http\Controllers\Web\OrderController::class, 'getUserOrders']);
+    Route::get('/api/invoices', [\App\Http\Controllers\Web\InvoiceController::class, 'getUserInvoices']);
+    
+    // Rutas de direcciones
+    Route::get('/api/addresses', [AddressController::class, 'index']);
+    Route::post('/addresses', [AddressController::class, 'store']);
+    Route::get('/addresses/{id}', [AddressController::class, 'show']);
+    Route::put('/addresses/{id}', [AddressController::class, 'update']);
+    Route::delete('/addresses/{id}', [AddressController::class, 'destroy']);
+    Route::put('/addresses/{id}/set-default', [AddressController::class, 'setDefault']);
+});
+
+Route::middleware(['auth'])->group(function () {
     Route::put('/orders/{order}/cancel', [OrderController::class, 'cancel'])
         ->name('orders.cancel');
         
     Route::get('/orders/{order}', [OrderController::class, 'show'])
     ->name('orders.show');
 
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::put('/orders/{order}/update-address', [OrderController::class, 'updateAddress']);
 });
 
 // Dashboard de administrador y CRUD de libros

@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <style>
         /* Estilos de formularios */
@@ -452,46 +453,6 @@
                 setTimeout(() => successMsg.remove(), 300);
             }, 5000);
         }
-
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPasswordInput').value;
-        
-        try {
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({ email, password })
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok) {
-                // Guardar token si lo necesitas
-                localStorage.setItem('token', data.token);
-                
-                // Redirigir según el rol
-                if (data.user.is_admin) {
-                    window.location.href = '/admin/dashboard';
-                } else {
-                    window.location.href = '/profile';
-                }
-            } else {
-                // Mostrar error
-                document.getElementById('emailError').textContent = data.message || 'Credenciales incorrectas';
-                document.getElementById('emailError').style.display = 'block';
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error al iniciar sesión');
-        }
-    });
-
 
     </script>
  

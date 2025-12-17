@@ -1,4 +1,4 @@
-# Usamos PHP 8.2 con FPM (FastCGI Process Manager)
+PHP 8.2 con FPM (FastCGI Process Manager)
 FROM php:8.2-fpm
 
 # Instalar dependencias del sistema

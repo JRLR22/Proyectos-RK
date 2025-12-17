@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Order;
 use App\Models\Cart;
@@ -23,44 +24,63 @@ class PaymentController extends Controller
 
     // ==================== CHECKOUT ====================
     
-    public function showCheckout()
-    {
-        $cart = $this->getOrCreateCart();
-        
-        if ($cart->items->isEmpty()) {
-            return redirect()->route('cart.index')->with('error', 'Tu carrito está vacío');
-        }
+public function showCheckout()
+{
+    $user = Auth::user();
+    $cart = $this->getOrCreateCart();
+    
+    if ($cart->items->isEmpty()) {
+        return redirect()->route('cart.index')->with('error', 'Tu carrito está vacío');
+    }
 
-        $cartData = $this->formatCartResponse($cart);
-        
-        // Crear orden pendiente
-        $order = Order::create([
-            'user_id' => Auth::id(),
-            'order_number' => Order::generateOrderNumber(),
-            'status' => 'pendiente',
-            'payment_status' => 'pendiente',
-            'subtotal' => $cart->subtotal,
-            'discount_amount' => $cart->discount_amount,
-            'shipping_cost' => 0,
-            'tax_amount' => 0,
-            'total' => $cart->total,
-        ]);
+    $addresses = $user->addresses()->orderBy('is_default', 'desc')->get();
+    
+    if ($addresses->isEmpty()) {
+        return redirect()->route('profile')
+            ->with('error', 'Debes agregar una dirección de envío antes de comprar');
+    }
 
-        // Crear items de la orden
-        foreach ($cart->items as $item) {
-            $order->items()->create([
-                'book_id' => $item->book_id,
-                'quantity' => $item->quantity,
-                'price' => $item->price_at_addition,
-            ]);
-        }
+    $cartData = $this->formatCartResponse($cart);
+    $defaultAddress = $addresses->where('is_default', true)->first() ?? $addresses->first();
+    
+    // CALCULAR IVA (16%)
+    $subtotal = $cart->subtotal - $cart->discount_amount;
+    $taxAmount = round($subtotal * 0.16, 2);
+    $total = $subtotal + $taxAmount;
+    
+    $order = Order::create([
+        'user_id' => $user->user_id,
+        'order_number' => Order::generateOrderNumber(),
+        'status' => 'pendiente',
+        'payment_status' => 'pendiente',
+        'address_id' => $defaultAddress->address_id,
+        'subtotal' => $cart->subtotal,
+        'discount_amount' => $cart->discount_amount,
+        'shipping_cost' => 0,
+        'tax_amount' => $taxAmount, 
+        'total' => $total, 
+    ]);
 
-        return view('checkout', [
-            'cart' => $cartData['items'],
-            'summary' => $cartData['summary'],
-            'order_id' => $order->order_id,
+    foreach ($cart->items as $item) {
+        $order->items()->create([
+            'book_id' => $item->book_id,
+            'quantity' => $item->quantity,
+            'price' => $item->price_at_addition,
         ]);
     }
+
+    // Actualizar el summary con IVA
+    $cartData['summary']['tax'] = $taxAmount;
+    $cartData['summary']['total'] = $total;
+
+    return view('checkout', [
+        'cart' => $cartData['items'],
+        'summary' => $cartData['summary'],
+        'order_id' => $order->order_id,
+        'addresses' => $addresses,
+        'selectedAddress' => $defaultAddress,
+    ]);
+}
 
     // ==================== STRIPE ====================
 
@@ -117,59 +137,60 @@ class PaymentController extends Controller
         }
     }
 
-    public function confirmStripePayment(Request $request)
-    {
-        try {
-            $request->validate([
-                'payment_intent_id' => 'required|string',
-            ]);
+public function confirmStripePayment(Request $request)
+{
+    try {
+        $request->validate([
+            'payment_intent_id' => 'required|string',
+        ]);
 
-            $paymentIntent = PaymentIntent::retrieve($request->payment_intent_id);
+        $paymentIntent = PaymentIntent::retrieve($request->payment_intent_id);
 
-            $payment = Payment::where('stripe_payment_intent_id', $request->payment_intent_id)
-                ->firstOrFail();
+        $payment = Payment::where('stripe_payment_intent_id', $request->payment_intent_id)
+            ->firstOrFail();
 
-            if ($paymentIntent->status === 'succeeded') {
-                $payment->markAsCompleted();
-                
-                // Actualizar orden
-                $order = Order::find($payment->order_id);
-                $order->status = 'procesando';
-                $order->payment_status = 'completado';
-                $order->save();
-                
-                // GENERAR FACTURA AUTOMÁTICAMENTE
-                $this->generateInvoice($order);
+        if ($paymentIntent->status === 'succeeded') {
+            $payment->markAsCompleted();
+            
+            // Actualizar orden
+            $order = Order::find($payment->order_id);
+            $order->status = 'procesando';
+            $order->payment_status = 'completado';
+            $order->payment_method = 'stripe'; 
+            $order->save();
+            
+            // GENERAR FACTURA AUTOMÁTICAMENTE
+            $this->generateInvoice($order);
 
-                // Limpiar carrito
-                $cart = Cart::forUser(Auth::id())->first();
-                if ($cart) {
-                    $cart->clear();
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Pago completado exitosamente',
-                    'order_id' => $payment->order_id,
-                ]);
-            } else {
-                $payment->markAsFailed('Payment Intent status: ' . $paymentIntent->status);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'El pago no se completó correctamente',
-                ], 400);
+            // Limpiar carrito
+            $cart = Cart::forUser(Auth::id())->first();
+            if ($cart) {
+                $cart->clear();
             }
 
-        } catch (\Exception $e) {
-            Log::error('Error confirmando pago Stripe: ' . $e->getMessage());
+            return response()->json([
+                'success' => true,
+                'message' => 'Pago completado exitosamente',
+                'order_id' => $payment->order_id,
+            ]);
+        } else {
+            $payment->markAsFailed('Payment Intent status: ' . $paymentIntent->status);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al confirmar el pago: ' . $e->getMessage(),
-            ], 500);
+                'message' => 'El pago no se completó correctamente',
+            ], 400);
         }
+
+    } catch (\Exception $e) {
+        Log::error('Error confirmando pago Stripe: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al confirmar el pago: ' . $e->getMessage(),
+        ], 500);
     }
+}
 
     // ==================== PAYPAL ====================
 
@@ -368,6 +389,7 @@ class PaymentController extends Controller
                 $order = Order::find($payment->order_id);
                 $order->status = 'procesando';
                 $order->payment_status = 'completado';
+                $order->payment_method = 'paypal';
                 $order->save();
 
                 // GENERAR FACTURA AUTOMÁTICAMENTE
