@@ -158,6 +158,12 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
 });
 
+// Rutas de recuperación de contraseña
+Route::get('/forgot-password', function () {
+    return view('forgot-password');
+})->name('password.request');
+
+
 // Rutas de testing
 Route::get('/test-redis-speed', function () {
     $start = microtime(true);

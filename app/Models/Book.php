@@ -33,7 +33,9 @@ class Book extends Model
   
     protected $appends = [
         'cover_url',
-       'authors_list'
+       'authors_list',
+       'average_rating',
+       'reviews_count'
     ];
 
     
@@ -101,7 +103,7 @@ class Book extends Model
     public function getReviewsCountAttribute()
     {
         if (!$this->relationLoaded('reviews')) {
-            return 0;
+            return $this->reviews()->count();
         }
         return $this->reviews->count();
     }

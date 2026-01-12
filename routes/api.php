@@ -10,17 +10,24 @@ use App\Http\Controllers\Web\AddressController;
 use App\Http\Controllers\Web\ShippingController;
 use App\Http\Controllers\Web\WishlistController;
 use App\Http\Controllers\Api\OrderController as ApiOrderController;
+use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Web\ReviewController;
+use App\Http\Controllers\Web\UserController;
+
 
 
 // Rutas públicas (sin autenticación)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Libros - rutas públicas
-Route::get('/books', [BookController::class, 'index']); 
-Route::get('/books/featured', [BookController::class, 'featured']);
+
+// Rutas de libros
+Route::get('/books', [BookController::class, 'index']);
 Route::get('/books/{id}', [BookController::class, 'show']);
+Route::get('/books/{id}/detail', [BookController::class, 'detail']); 
+Route::get('/books/search', [BookController::class, 'search']);
+Route::get('/books/featured', [BookController::class, 'featured']);
 
 // Categorías - rutas públicas
 Route::get('/categories', [CategoryController::class, 'index']);
@@ -100,4 +107,19 @@ Route::middleware('auth:sanctum')->prefix('reviews')->group(function () {
     Route::get('/my-reviews', [ReviewController::class, 'myReviews']);
     Route::put('/{id}', [ReviewController::class, 'update']);
     Route::delete('/{id}', [ReviewController::class, 'destroy']);
+});
+
+// Rutas públicas (sin autenticación) - para reset password
+Route::post('/password/forgot', [PasswordResetController::class, 'sendResetLink']);
+Route::post('/password/verify-token', [PasswordResetController::class, 'verifyToken']);
+Route::post('/password/reset', [PasswordResetController::class, 'resetPassword']);
+
+// Ruta protegida (requiere autenticación) - para cambiar contraseña desde ajustes
+Route::middleware('auth:sanctum')->post('/password/change', [PasswordResetController::class, 'change']);
+
+// Rutas protegidas (requieren autenticación)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::put('/user/profile', [UserController::class, 'updateProfile']);
+    Route::put('/user/password', [UserController::class, 'updatePassword']);
+    Route::get('/user', [UserController::class, 'show']);
 });

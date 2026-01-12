@@ -284,9 +284,6 @@
                 <label>Número Celular (opcional)</label>
                 <input type="text" name="phone" value="{{ old('phone') }}" placeholder="Teléfono" class="form-control">
 
-                <label>Dirección (opcional)</label>
-                <textarea name="address" placeholder="Dirección" class="form-control" rows="2">{{ old('address') }}</textarea>
-
                 <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
                     <input type="checkbox" required>
                     <small>He leído y acepto la <a href="{{ route('proteccion-datos') }}" style="color:#ffa3c2;">política de privacidad</a>.</small>
@@ -321,7 +318,7 @@
                 <span class="error-message" id="passwordError" style="display:none;"></span>
 
                 <div style="text-align: right; margin-bottom: 15px;">
-                    <a href="#" style="color:#ffa3c2; font-size:13px;">¿Olvidaste tu contraseña?</a>
+                    <a href="{{ route('password.request') }}" style="color:#ffa3c2; font-size:13px;">¿Olvidaste tu contraseña?</a>
                 </div>
 
                 <button type="submit" class="btn-auth">Entrar</button>

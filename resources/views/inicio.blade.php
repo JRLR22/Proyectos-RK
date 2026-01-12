@@ -443,9 +443,9 @@
                     </div>
                     <h4 class="text-base md:text-lg font-bold mb-4">SERVICIO AL CLIENTE</h4>
                     <ul class="space-y-2 text-xs md:text-sm">
-                        <li><a href="#" class="hover:text-sky-400">Mis Pedidos</a></li>
-                        <li><a href="#" class="hover:text-sky-400">Mis Favoritos</a></li>
-                        <li><a href="#" class="hover:text-sky-400">Mis Direcciones</a></li>
+                        <li><a href="{{ route('profile') }}" class="hover:text-sky-400">Mis Pedidos</a></li>
+                        <li><a href="{{ route('wishlist.index') }}" class="hover:text-sky-400">Mis Favoritos</a></li>
+                        <li><a href="{{ route('profile') }}" class="hover:text-sky-400">Mis Direcciones</a></li>
                     </ul>
                 </div>
 
@@ -484,7 +484,7 @@
                     </div>
                     <h4 class="text-base md:text-lg font-bold mb-4">FACTURACIÓN</h4>
                     <ul class="space-y-2 text-xs md:text-sm">
-                        <li><a href="#" class="hover:text-sky-400">Facturación electrónica</a></li>
+                        <li><a href="{{ route('profile') }}" class="hover:text-sky-400">Facturación electrónica</a></li>
                     </ul>
                 </div>
             </div>
