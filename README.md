@@ -55,17 +55,41 @@ docker-compose.yml
 
 ## Cómo correrlo con Docker
 
-```bash
-cp .env.example .env
-docker compose up -d --build
-docker compose exec app php artisan key:generate
-docker compose exec app php artisan migrate
-docker compose exec app php artisan db:seed --class=BooksTableSeeder
-```
+1. Crea el archivo de entorno:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   En `.env`, usa Redis para la caché y las colas (así lo espera el worker de `docker-compose.yml`):
+
+   ```env
+   CACHE_STORE=redis
+   QUEUE_CONNECTION=redis
+   ```
+
+2. Levanta los contenedores e instala las dependencias. La carpeta del proyecto se monta dentro del contenedor, así que `vendor/` se instala ahí:
+
+   ```bash
+   docker compose up -d --build
+   docker compose exec app composer install
+   ```
+
+3. Prepara la aplicación y la base de datos:
+
+   ```bash
+   docker compose exec app php artisan key:generate
+   docker compose exec app php artisan migrate
+   docker compose exec app php artisan db:seed --class=BooksTableSeeder
+   docker compose exec app chown -R www-data:www-data storage bootstrap/cache
+   docker compose restart queue
+   ```
 
 El sitio queda en http://localhost:8000. `docker-compose.yml` ya configura la conexión a PostgreSQL y Redis para los contenedores.
 
-Para probar pagos y correos, agrega a `.env` tus llaves de prueba:
+> Si ya tienes PostgreSQL o Redis instalados en tu equipo, los puertos 5432 o 6379 pueden estar ocupados. Detén esos servicios antes de levantar los contenedores.
+
+Para probar pagos, agrega a `.env` tus llaves de prueba:
 
 ```env
 STRIPE_KEY=
@@ -74,8 +98,9 @@ STRIPE_WEBHOOK_SECRET=
 PAYPAL_CLIENT_ID=
 PAYPAL_SECRET=
 PAYPAL_MODE=sandbox
-QUEUE_CONNECTION=redis
 ```
+
+Los correos se escriben en `storage/logs/laravel.log` (`MAIL_MAILER=log`) mientras no configures un servidor SMTP.
 
 ## Equipo
 
